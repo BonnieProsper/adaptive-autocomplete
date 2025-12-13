@@ -25,6 +25,7 @@ aac = "aac.cli.app:app"
 target-version = "py310"
 line-length = 100
 
+[tool.ruff.lint]
 select = [
   "E",   # pycodestyle
   "F",   # pyflakes
@@ -37,7 +38,7 @@ ignore = [
   "E501",  # line length (handled manually)
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["aac"]
 
 [tool.mypy]
