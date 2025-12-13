@@ -19,7 +19,12 @@ class CompletionContext:
         if self.cursor_pos is None:
             return self.text.split()[-1] if self.text else ""
 
-        return self.text[: self.cursor_pos].split()[-1]
+        # `cursor_pos` is given as a 1-based index (cursor between characters),
+        # so convert to a Python slice index by subtracting 1. Ensure non-negative.
+        pos = max(0, self.cursor_pos - 1)
+        prefix_part = self.text[:pos]
+        parts = prefix_part.split()
+        return parts[-1] if parts else ""
 
 
 @dataclass(frozen=True)
