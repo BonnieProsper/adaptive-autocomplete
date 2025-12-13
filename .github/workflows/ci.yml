@@ -42,4 +42,9 @@ jobs:
         run: poetry run mypy src
 
       - name: Tests
-        run: poetry run pytest
+        run: |
+          if [ -d tests ] && [ "$(ls -A tests)" ]; then
+            poetry run pytest
+          else
+            echo "No tests present, skipping pytest"
+          fi
