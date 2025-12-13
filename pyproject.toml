@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "adaptive-autocomplete"
+version = "0.1.0"
+description = "Adaptive, learning-based autocompletion engine for developer productivity"
+authors = ["Bonnie McConnell <bonniep.mcconnell@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "aac", from = "src" }]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+typer = "^0.12.3"
+rich = "^13.7.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+pytest-cov = "^5.0.0"
+ruff = "^0.5.7"
+mypy = "^1.11.1"
+types-setuptools = "^71.1.0"
+
+[tool.poetry.scripts]
+aac = "aac.cli.app:app"
