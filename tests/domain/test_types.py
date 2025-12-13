@@ -1,4 +1,4 @@
-from aac.domain.types import CompletionContext, Suggestion, ScoredSuggestion, PredictionResult
+from aac.domain.types import CompletionContext, PredictionResult, ScoredSuggestion, Suggestion
 
 
 def test_prefix_without_cursor():
