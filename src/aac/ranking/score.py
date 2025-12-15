@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from aac.domain.types import PredictionResult, Suggestion
+from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 
 
 class ScoreRanker(Ranker):
-    """Ranks predictions by descending score."""
+    """Ranks suggestions by descending score."""
 
-    def rank(self, predictions: Sequence[PredictionResult]) -> list[Suggestion]:
-        ordered = sorted(predictions, key=lambda p: p.score, reverse=True)
-        return [p.suggestion for p in ordered]
+    def rank(
+        self, suggestions: Sequence[ScoredSuggestion]
+    ) -> list[Suggestion]:
+        ordered = sorted(suggestions, key=lambda s: s.score, reverse=True)
+        return [s.suggestion for s in ordered]
