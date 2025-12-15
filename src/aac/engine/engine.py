@@ -22,6 +22,6 @@ class AutocompleteEngine:
 
         for predictor in self._predictors:
             result = predictor.predict(text)
-            scored.extend(result.suggestions)
+            scored.extend(result.Suggestion)
 
         return self._ranker.rank(scored)
