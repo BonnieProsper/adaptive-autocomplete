@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import Prediction, Suggestion
+from aac.domain.types import PredictionResult, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.score import ScoreRanker
 
@@ -22,7 +22,7 @@ class AutocompleteEngine:
         self._ranker = ranker or ScoreRanker()
 
     def suggest(self, text: str) -> list[Suggestion]:
-        predictions: list[Prediction] = []
+        predictions: list[PredictionResult] = []
 
         for predictor in self._predictors:
             predictions.extend(predictor.predict(text))
