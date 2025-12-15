@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
 
-
 __all__ = ["AutocompleteEngine"]
 
 

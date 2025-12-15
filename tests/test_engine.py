@@ -1,5 +1,5 @@
+from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.engine import AutocompleteEngine
-from aac.domain.types import Suggestion, ScoredSuggestion
 
 
 class FakePredictor:
