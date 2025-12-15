@@ -8,9 +8,9 @@ def test_prefix_predictor_basic() -> None:
 
     results = predictor.predict("he")
 
-    texts = {r.suggestion.text for r in results}
+    values = {r.suggestion.value for r in results}
 
-    assert texts == {"hello", "help", "helium"}
+    assert values == {"hello", "help", "helium"}
 
 
 def test_prefix_predictor_empty_input() -> None:
