@@ -25,7 +25,7 @@ class PrefixPredictor(Predictor):
             if word.startswith(token) and word != token:
                 suggestions.append(
                     ScoredSuggestion(
-                        suggestion=Suggestion(text=word),
+                        suggestion=Suggestion(word),
                         score=self._score(token, word),
                     )
                 )
