@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Sequence
 
 from aac.domain.predictor import Predictor
@@ -18,9 +19,16 @@ class AutocompleteEngine:
         self._ranker = ranker or ScoreRanker()
 
     def suggest(self, text: str) -> list[Suggestion]:
-        scored: list[ScoredSuggestion] = []
+        aggregated: dict[str, float] = defaultdict(float)
 
         for predictor in self._predictors:
-            scored.extend(predictor.predict(text))
+            for scored in predictor.predict(text):
+                aggregated[scored.suggestion.value] += scored.score
 
-        return self._ranker.rank(scored)
+        fused = [
+            ScoredSuggestion(Suggestion(value), score)
+            for value, score in aggregated.items()
+        ]
+
+        return self._ranker.rank(fused)
+
