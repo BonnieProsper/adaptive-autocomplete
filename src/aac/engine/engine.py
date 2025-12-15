@@ -3,16 +3,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import PredictionResult, Suggestion
+from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.score import ScoreRanker
 
 
 class AutocompleteEngine:
-    """
-    Orchestrates multiple predictors to produce ranked autocomplete suggestions.
-    """
-
     def __init__(
         self,
         predictors: Sequence[Predictor],
@@ -22,9 +18,10 @@ class AutocompleteEngine:
         self._ranker = ranker or ScoreRanker()
 
     def suggest(self, text: str) -> list[Suggestion]:
-        predictions: list[PredictionResult] = []
+        scored: list[ScoredSuggestion] = []
 
         for predictor in self._predictors:
-            predictions.extend(predictor.predict(text))
+            result = predictor.predict(text)
+            scored.extend(result.suggestions)
 
-        return self._ranker.rank(predictions)
+        return self._ranker.rank(scored)
