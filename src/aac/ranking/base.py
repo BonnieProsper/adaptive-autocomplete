@@ -10,5 +10,5 @@ class Ranker(ABC):
     """Ranks predictions and returns ordered suggestions."""
 
     @abstractmethod
-    def rank(self, predictions: Sequence[Prediction]) -> list[Suggestion]:
+    def rank(self, predictions: Sequence[PredictionResult]) -> list[Suggestion]:
         raise NotImplementedError
