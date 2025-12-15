@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import Prediction, Suggestion
+from aac.domain.types import ScoredSuggestion, Suggestion
+
+
+__all__ = ["AutocompleteEngine"]
 
 
 class AutocompleteEngine:
@@ -22,7 +25,7 @@ class AutocompleteEngine:
         self._predictors = list(predictors)
 
     def suggest(self, text: str) -> list[Suggestion]:
-        predictions: list[Prediction] = []
+        predictions: list[ScoredSuggestion] = []
 
         for predictor in self._predictors:
             preds = predictor.predict(text)
