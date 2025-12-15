@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from aac.domain.types import Prediction, Suggestion
+from aac.domain.types import PredictionResult, Suggestion
 
 
 class Ranker(ABC):
