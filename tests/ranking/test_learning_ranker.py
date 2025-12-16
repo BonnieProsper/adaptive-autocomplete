@@ -8,7 +8,7 @@ def test_learning_ranker_boosts_previously_selected_value() -> None:
     history.record("he", "hello")
     history.record("he", "hello")
 
-    ranker = LearningRanker(history, weight=1.0)
+    ranker = LearningRanker(history, boost=1.0)
 
     suggestions = [
         ScoredSuggestion("hello", 1.0),
