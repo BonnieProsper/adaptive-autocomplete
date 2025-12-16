@@ -32,3 +32,10 @@ class AutocompleteEngine:
 
         return self._ranker.rank(fused)
 
+    def record_selection(self, prefix: str, value: str) -> None:
+        for predictor in self._predictors:
+            record = getattr(predictor, "record", None)
+            if callable(record):
+                record(prefix, value)
+
+
