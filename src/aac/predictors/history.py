@@ -32,3 +32,7 @@ class HistoryPredictor(Predictor):
             )
 
         return results
+
+    def record(self, prefix: str, value: str) -> None:
+        self._history.record(prefix, value)
+
