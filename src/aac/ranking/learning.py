@@ -22,16 +22,18 @@ class LearningRanker:
     ) -> list[Suggestion]:
         counts = self._history.counts_for_prefix(prefix)
 
+        # No learning signal = preserve original order
+        if not counts:
+            return [s.suggestion for s in suggestions]
+
         adjusted: list[ScoredSuggestion] = []
 
         for scored in suggestions:
-            bonus = counts.get(scored.suggestion.value, 0)
-            adjusted_score = scored.score + bonus * self._boost
-
+            bonus = counts.get(scored.suggestion, 0)
             adjusted.append(
                 ScoredSuggestion(
-                    scored.suggestion,
-                    adjusted_score,
+                    suggestion=scored.suggestion,
+                    score=scored.score + bonus * self._boost,
                 )
             )
 
