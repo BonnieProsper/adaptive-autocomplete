@@ -1,6 +1,6 @@
+from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
-from aac.domain.history import History
 from aac.ranking.learning import LearningRanker
 
 
