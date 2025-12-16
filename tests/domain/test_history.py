@@ -8,7 +8,7 @@ def test_history_window_last_n():
         HistoryEntry(context="git ch", chosen="cherry-pick"),
     ]
 
-    window = HistoryWindow(entries=entries)
+    window = History(entries=entries)
 
     last_two = window.last_n(2)
 
