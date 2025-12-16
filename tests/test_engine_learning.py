@@ -11,16 +11,15 @@ def test_engine_adapts_after_selection() -> None:
         predictors=[
             PrefixPredictor(["hello", "help"]),
         ],
-        rankers=[
-            LearningRanker(history),
-        ],
-        history=history,
+        ranker=LearningRanker(history),
     )
 
+    # initial order is alphabetical / neutral
     initial = engine.suggest("he")
-    assert initial[0].value in {"hello", "help"}
+    assert [s.value for s in initial] == ["hello", "help"]
 
+    # user selects "help"
     engine.record_selection("he", "help")
 
-    adapted = engine.suggest("he")
-    assert adapted[0].value == "help"
+    updated = engine.suggest("he")
+    assert updated[0].value == "help"
