@@ -13,7 +13,6 @@ class ScoreRanker:
     ) -> list[Suggestion]:
         sorted_items = sorted(
             suggestions,
-            key=lambda s: s.score,
-            reverse=True,
+            key=lambda s: (-s.score, s.suggestion.value),
         )
         return [s.suggestion for s in sorted_items]
