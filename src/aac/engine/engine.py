@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 from collections.abc import Sequence
 
-from aac.domain.history import History
 from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
@@ -14,26 +11,30 @@ class AutocompleteEngine:
         self,
         predictors: Sequence[Predictor],
         ranker: Ranker | None = None,
-        history: History | None = None,
     ) -> None:
         self._predictors = list(predictors)
         self._ranker = ranker or ScoreRanker()
-        self._history = history or History()
 
     def suggest(self, prefix: str) -> list[Suggestion]:
-        suggestions = self._predict(prefix)
-
-        scored = [
-            ScoredSuggestion(suggestion=s, score=0.0)
-            for s in suggestions
-        ]
-
-        ranked = self._ranker.rank(prefix, scored)
-        return ranked
-
+        scored = self._predict(prefix)
+        return self._ranker.rank(prefix, scored)
 
     def record_selection(self, prefix: str, value: str) -> None:
-        """
-        Record a user-selected suggestion so future results can adapt.
-        """
-        self._history.record(prefix, value)
+        for predictor in self._predictors:
+            record = getattr(predictor, "record", None)
+            if callable(record):
+                record(prefix, value)
+
+    def _predict(self, prefix: str) -> list[ScoredSuggestion]:
+        aggregated: dict[str, float] = {}
+
+        for predictor in self._predictors:
+            for scored in predictor.predict(prefix):
+                aggregated[scored.suggestion.value] = (
+                    aggregated.get(scored.suggestion.value, 0.0) + scored.score
+                )
+
+        return [
+            ScoredSuggestion(Suggestion(value), score)
+            for value, score in aggregated.items()
+        ]
