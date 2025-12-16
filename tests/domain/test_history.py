@@ -1,4 +1,4 @@
-from aac.domain.history import HistoryEntry, HistoryWindow
+from aac.domain.history import HistoryEntry, History
 
 
 def test_history_window_last_n():
