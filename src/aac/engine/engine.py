@@ -33,6 +33,11 @@ class AutocompleteEngine:
         return self._ranker.rank(fused)
 
     def record_selection(self, prefix: str, value: str) -> None:
+        """
+        Record a user-selected suggestion so future results can adapt.
+        """
+        self._history.record(prefix, value)
+        #previous method:
         for predictor in self._predictors:
             record = getattr(predictor, "record", None)
             if callable(record):
