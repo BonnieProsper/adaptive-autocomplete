@@ -1,39 +1,37 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from aac.domain.history import History
-from aac.domain.types import ScoredSuggestion
-from aac.ranking.base import RankingStrategy
+from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.ranking.base import Ranker
 
 
-class LearningRanker(RankingStrategy):
-    """
-    Boosts suggestions based on historical user selections
-    for a given prefix.
-    """
-
-    def __init__(self, history: History, weight: float = 1.0) -> None:
+class LearningRanker:
+    def __init__(
+        self,
+        history: History,
+        boost: float = 1.0,
+    ) -> None:
         self._history = history
-        self._weight = weight
+        self._boost = boost
 
     def rank(
         self,
-        prefix: str,
-        suggestions: list[ScoredSuggestion],
-    ) -> list[ScoredSuggestion]:
-        counts = self._history.counts_for_prefix(prefix)
+        suggestions: Sequence[ScoredSuggestion],
+    ) -> list[Suggestion]:
+        adjusted: list[ScoredSuggestion] = []
 
-        if not counts:
-            return suggestions
+        for scored in suggestions:
+            bonus = self._history.get(scored.suggestion.value)
+            adjusted_score = scored.score + bonus * self._boost
 
-        ranked: list[ScoredSuggestion] = []
-
-        for suggestion in suggestions:
-            boost = counts.get(suggestion.value, 0) * self._weight
-            ranked.append(
+            adjusted.append(
                 ScoredSuggestion(
-                    value=suggestion.value,
-                    score=suggestion.score + boost,
+                    scored.suggestion,
+                    adjusted_score,
                 )
             )
 
-        return ranked
+        adjusted.sort(key=lambda s: s.score, reverse=True)
+        return [s.suggestion for s in adjusted]
