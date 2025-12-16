@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -9,17 +10,31 @@ class HistoryEntry:
     """
     A single observed completion event.
     """
-    context: str
-    chosen: str
+    prefix: str
+    value: str
 
 
-@dataclass(frozen=True)
-class HistoryWindow:
+class History:
     """
-    A read-only window over recent history.
-    """
-    entries: Sequence[HistoryEntry]
+    Append-only store of user completion events.
 
-    def last_n(self, n: int) -> Sequence[HistoryEntry]:
-        return self.entries[-n:]
+    Acts as the source of truth for all learning signals.
+    """
+    def __init__(self) -> None:
+        self._entries: list[HistoryEntry] = []
+
+    def record(self, prefix: str, value: str) -> None:
+        self._entries.append(HistoryEntry(prefix, value))
+
+    def entries(self) -> Sequence[HistoryEntry]:
+        return tuple(self._entries)
+
+    def counts_for_prefix(self, prefix: str) -> dict[str, int]:
+        counts: dict[str, int] = defaultdict(int)
+
+        for entry in self._entries:
+            if entry.prefix == prefix:
+                counts[entry.value] += 1
+
+        return dict(counts)
 
