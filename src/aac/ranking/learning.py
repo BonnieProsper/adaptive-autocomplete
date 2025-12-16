@@ -20,7 +20,7 @@ class LearningRanker:
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[Suggestion]:
-        counts = self._history.get(prefix)
+        counts = self._history.counts_for_prefix(prefix)
 
         adjusted: list[ScoredSuggestion] = []
 
