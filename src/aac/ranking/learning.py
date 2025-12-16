@@ -4,7 +4,6 @@ from collections.abc import Sequence
 
 from aac.domain.history import History
 from aac.domain.types import ScoredSuggestion, Suggestion
-from aac.ranking.base import Ranker
 
 
 class LearningRanker:
