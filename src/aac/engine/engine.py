@@ -21,19 +21,17 @@ class AutocompleteEngine:
         self._ranker = ranker or ScoreRanker()
         self._history = history or History()
 
-    def suggest(self, text: str) -> list[Suggestion]:
-        aggregated: dict[str, float] = defaultdict(float)
+    def suggest(self, prefix: str) -> list[Suggestion]:
+        suggestions = self._predict(prefix)
 
-        for predictor in self._predictors:
-            for scored in predictor.predict(text):
-                aggregated[scored.suggestion.value] += scored.score
-
-        fused = [
-            ScoredSuggestion(Suggestion(value), score)
-            for value, score in aggregated.items()
+        scored = [
+            ScoredSuggestion(suggestion=s, score=0.0)
+            for s in suggestions
         ]
 
-        return self._ranker.rank(text, fused)
+        ranked = self._ranker.rank(prefix, scored)
+        return ranked
+
 
     def record_selection(self, prefix: str, value: str) -> None:
         """
