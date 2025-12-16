@@ -33,8 +33,7 @@ class AutocompleteEngine:
             for value, score in aggregated.items()
         ]
 
-        ranked = self._ranker.rank(fused)
-        return [s.suggestion for s in ranked]
+        return self._ranker.rank(fused)
 
     def record_selection(self, prefix: str, value: str) -> None:
         """
