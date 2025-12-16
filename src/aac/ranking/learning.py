@@ -29,7 +29,7 @@ class LearningRanker:
         adjusted: list[ScoredSuggestion] = []
 
         for scored in suggestions:
-            bonus = counts.get(scored.suggestion, 0)
+            bonus = counts.get(scored.suggestion.value, 0)
             adjusted.append(
                 ScoredSuggestion(
                     suggestion=scored.suggestion,
