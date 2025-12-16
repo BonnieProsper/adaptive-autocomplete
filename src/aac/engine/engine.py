@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 
+from aac.domain.history import History
 from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
@@ -14,9 +15,11 @@ class AutocompleteEngine:
         self,
         predictors: Sequence[Predictor],
         ranker: Ranker | None = None,
+        history: History | None = None,
     ) -> None:
         self._predictors = list(predictors)
         self._ranker = ranker or ScoreRanker()
+        self._history = history or History()
 
     def suggest(self, text: str) -> list[Suggestion]:
         aggregated: dict[str, float] = defaultdict(float)
@@ -30,17 +33,11 @@ class AutocompleteEngine:
             for value, score in aggregated.items()
         ]
 
-        return self._ranker.rank(fused)
+        ranked = self._ranker.rank(fused)
+        return [s.suggestion for s in ranked]
 
     def record_selection(self, prefix: str, value: str) -> None:
         """
         Record a user-selected suggestion so future results can adapt.
         """
         self._history.record(prefix, value)
-        #previous method:
-        for predictor in self._predictors:
-            record = getattr(predictor, "record", None)
-            if callable(record):
-                record(prefix, value)
-
-
