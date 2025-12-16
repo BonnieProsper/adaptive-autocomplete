@@ -17,7 +17,7 @@ class HistoryPredictor(Predictor):
         if not text:
             return []
 
-        counts = self._history.get(text)
+        counts = self._history.counts_for_prefix(text)
         if not counts:
             return []
 
