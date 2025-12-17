@@ -9,7 +9,6 @@ from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.score import ScoreRanker
 
-
 class AutocompleteEngine:
     def __init__(
         self,
@@ -19,7 +18,15 @@ class AutocompleteEngine:
     ) -> None:
         self._predictors = list(predictors)
         self._ranker = ranker or ScoreRanker()
-        self._history = history or History()
+
+        # SINGLE SOURCE OF TRUTH FOR HISTORY
+        if history is not None:
+            self._history = history
+        elif hasattr(self._ranker, "history"):
+            self._history = self._ranker.history  # type: ignore[attr-defined]
+        else:
+            self._history = History()
+
 
     def suggest(self, text: str) -> list[Suggestion]:
         aggregated: dict[str, float] = defaultdict(float)
