@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -10,15 +12,27 @@ class LearningRanker(Ranker):
         self._history = history
         self._boost = boost
 
-    def rank(self, prefix: str, suggestions: Sequence[ScoredSuggestion]) -> list[Suggestion]:
+    def rank(
+        self,
+        prefix: str,
+        suggestions: Sequence[ScoredSuggestion],
+    ) -> list[Suggestion]:
         counts = self._history.counts_for_prefix(prefix)
 
-        adjusted = [
-            ScoredSuggestion(
-                s.suggestion,
-                s.score + counts.get(s.suggestion.value, 0)
+        # no learning signal so it preserves order exactly
+        if not counts:
+            return [s.suggestion for s in suggestions]
+
+        adjusted: list[ScoredSuggestion] = []
+
+        for scored in suggestions:
+            bonus = counts.get(scored.suggestion.value, 0)
+            adjusted.append(
+                ScoredSuggestion(
+                    scored.suggestion,
+                    scored.score + bonus * self._boost,
+                )
             )
-            for s in suggestions
-        ]
-        adjusted.sort(key=lambda s: (-s.score, s.suggestion.value))
+
+        adjusted.sort(key=lambda s: s.score, reverse=True)
         return [s.suggestion for s in adjusted]
