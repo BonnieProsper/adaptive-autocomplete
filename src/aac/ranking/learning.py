@@ -10,23 +10,15 @@ class LearningRanker(Ranker):
         self._history = history
         self._boost = boost
 
-    def rank(
-        self,
-        prefix: str,
-        suggestions: Sequence[ScoredSuggestion],
-    ) -> list[Suggestion]:
+    def rank(self, prefix: str, suggestions: Sequence[ScoredSuggestion]) -> list[Suggestion]:
         counts = self._history.counts_for_prefix(prefix)
 
-        adjusted: list[ScoredSuggestion] = []
-        for scored in suggestions:
-            bonus = counts.get(scored.suggestion.value, 0)
-            adjusted.append(
-                ScoredSuggestion(
-                    suggestion=scored.suggestion,
-                    score=scored.score + bonus * self._boost,
-                )
+        adjusted = [
+            ScoredSuggestion(
+                s.suggestion,
+                s.score + counts.get(s.suggestion.value, 0)
             )
-
-        adjusted.sort(key=lambda s: s.score, reverse=True)
-
+            for s in suggestions
+        ]
+        adjusted.sort(key=lambda s: (-s.score, s.suggestion.value))
         return [s.suggestion for s in adjusted]
