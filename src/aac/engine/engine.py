@@ -21,24 +21,25 @@ class AutocompleteEngine:
         self._ranker = ranker or ScoreRanker()
         self._history = history or History()
 
-    def suggest(self, prefix: str) -> list[Suggestion]:
+    def suggest(self, text: str) -> list[Suggestion]:
         aggregated: dict[str, float] = defaultdict(float)
 
         for predictor in self._predictors:
-            for scored in predictor.predict(prefix):
+            for scored in predictor.predict(text):
                 aggregated[scored.suggestion.value] += scored.score
 
-        # Deterministic baseline order before ranking
         fused = [
             ScoredSuggestion(Suggestion(value), score)
-            for value, score in sorted(aggregated.items())
+            for value, score in aggregated.items()
         ]
 
-        return self._ranker.rank(prefix, fused)
+        return self._ranker.rank(text, fused)
 
     def record_selection(self, prefix: str, value: str) -> None:
+        # CENTRAL LEARNING RECORD
         self._history.record(prefix, value)
 
+        # Optional predictor learning
         for predictor in self._predictors:
             record = getattr(predictor, "record", None)
             if callable(record):
