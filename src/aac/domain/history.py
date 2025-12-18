@@ -38,3 +38,10 @@ class History:
 
         return dict(counts)
 
+    def count(self, value: str) -> int:
+        return sum(
+            prefix_counts.get(value, 0)
+            for prefix_counts in self._counts.values()
+        )
+
+
