@@ -9,6 +9,7 @@ from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.score import ScoreRanker
 
+
 class AutocompleteEngine:
     def __init__(
         self,
