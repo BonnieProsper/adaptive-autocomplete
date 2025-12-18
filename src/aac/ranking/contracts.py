@@ -1,4 +1,5 @@
 from typing import Protocol
+
 from aac.domain.history import History
 
 
