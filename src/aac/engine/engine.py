@@ -24,7 +24,7 @@ class AutocompleteEngine:
         if history is not None:
             self._history = history
         elif hasattr(self._ranker, "history"):
-            self._history = self._ranker.history  # type: ignore[attr-defined]
+            self._history = self._ranker.history  
         else:
             self._history = History()
 
