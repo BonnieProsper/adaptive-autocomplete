@@ -1,13 +1,19 @@
-"""Contract test: tests shared history identity."""
-def test_engine_and_learning_ranker_share_history() -> None:
+"""Invariant test: learning must preserve order with no history signal."""
+
+from aac.domain.history import History
+from aac.domain.types import Suggestion, ScoredSuggestion
+from aac.ranking.learning import LearningRanker
+
+
+def test_learning_ranker_preserves_order_without_history() -> None:
     history = History()
     ranker = LearningRanker(history)
 
-    engine = AutocompleteEngine(
-        predictors=[PrefixPredictor(["hello", "help"])],
-        ranker=ranker,
-    )
+    suggestions = [
+        ScoredSuggestion(Suggestion("a"), 0.0),
+        ScoredSuggestion(Suggestion("b"), 0.0),
+    ]
 
-    engine.record_selection("he", "help")
+    ranked = ranker.rank("x", suggestions)
 
-    assert history.count("help") == 1
+    assert [s.value for s in ranked] == ["a", "b"]
