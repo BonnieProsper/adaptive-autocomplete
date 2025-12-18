@@ -7,8 +7,8 @@ from aac.domain.history import History
 from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
-from aac.ranking.score import ScoreRanker
 from aac.ranking.contracts import LearnsFromHistory
+from aac.ranking.score import ScoreRanker
 
 
 class AutocompleteEngine:
