@@ -2,6 +2,7 @@ from aac.domain.history import History
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.learning import LearningRanker
 
+
 def test_explain_reflects_learning_history() -> None:
     history = History()
     ranker = LearningRanker(history, boost=1.0)
