@@ -19,7 +19,7 @@ class CompletionContext:
         if self.cursor_pos is None:
             return self.text.split()[-1] if self.text else ""
 
-        # `cursor_pos` is given as a 1-based index (cursor between characters),
+        # 'cursor_pos' is given as a 1-based index (cursor between characters),
         # so convert to a Python slice index by subtracting 1. Ensure non-negative.
         pos = max(0, self.cursor_pos - 1)
         prefix_part = self.text[:pos]
@@ -51,4 +51,15 @@ class PredictionResult:
     """
     predictor: str
     suggestions: Sequence[ScoredSuggestion]
+
+
+@dataclass(frozen=True)
+class RankingExplanation:
+    """
+    Captures original score, learning signal and final result.
+    """
+    value: str
+    base_score: float
+    history_boost: float
+    final_score: float
 
