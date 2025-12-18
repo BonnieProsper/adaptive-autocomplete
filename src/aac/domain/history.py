@@ -40,8 +40,9 @@ class History:
 
     def count(self, value: str) -> int:
         return sum(
-            prefix_counts.get(value, 0)
-            for prefix_counts in self._counts.values()
+            1 for entry in self._entries
+            if entry.value == value
         )
+
 
 
