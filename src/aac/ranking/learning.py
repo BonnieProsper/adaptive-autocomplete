@@ -12,31 +12,26 @@ class LearningRanker(Ranker, LearnsFromHistory):
     """
     Ranker that adapts suggestion ordering based on user selection history.
 
-    Learning is additive:
-    - Suggestions with no history remain neutral
-    - Ordering is stable when no learning signal exists
+    Learning is additive and stable:
+    - No history → original order preserved
+    - More frequent selections → higher rank
     """
 
     def __init__(self, history: History, boost: float = 1.0) -> None:
-        self._history = history
+        self.history = history
         self._boost = boost
-
-    @property
-    def history(self) -> History:
-        return self._history
 
     def rank(
         self,
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[Suggestion]:
-        # No suggestions = nothing to rank
         if not suggestions:
             return []
 
-        counts = self._history.counts_for_prefix(prefix)
+        counts = self.history.counts_for_prefix(prefix)
 
-        # fast method: no learning signal = preserve original order
+        # No learning signal → preserve original order
         if not counts:
             return [s.suggestion for s in suggestions]
 
@@ -45,7 +40,6 @@ class LearningRanker(Ranker, LearnsFromHistory):
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
 
-            # Only adjust score if learning exists
             if count > 0:
                 adjusted.append(
                     ScoredSuggestion(
@@ -56,7 +50,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
             else:
                 adjusted.append(s)
 
-        # Stable sort: only score determines reordering
+        # Stable sort by score (Python sort is stable)
         adjusted.sort(key=lambda s: s.score, reverse=True)
 
         return [s.suggestion for s in adjusted]
