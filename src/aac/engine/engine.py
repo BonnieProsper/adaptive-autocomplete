@@ -8,6 +8,7 @@ from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.score import ScoreRanker
+from aac.ranking.contracts import LearnsFromHistory
 
 
 class AutocompleteEngine:
@@ -23,8 +24,8 @@ class AutocompleteEngine:
         # SINGLE SOURCE OF TRUTH FOR HISTORY
         if history is not None:
             self._history = history
-        elif hasattr(self._ranker, "history"):
-            self._history = self._ranker.history  
+        elif isinstance(self._ranker, LearnsFromHistory):
+            self._history = self._ranker.history
         else:
             self._history = History()
 
