@@ -1,7 +1,8 @@
 from aac.domain.history import History
-from aac.ranking.learning import LearningRanker
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
+from aac.ranking.learning import LearningRanker
+
 
 def test_engine_and_learning_ranker_share_history() -> None:
     history = History()
