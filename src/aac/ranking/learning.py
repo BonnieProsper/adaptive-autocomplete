@@ -83,8 +83,19 @@ class LearningRanker(Ranker, LearnsFromHistory):
                 )
             )
 
-        # Sorted for readability, not required by rank()
-        explanations.sort(key=lambda e: e.final_score, reverse=True)
+        def explain_as_dicts(
+            self,
+            prefix: str,
+            suggestions: Sequence[ScoredSuggestion],
+        ) -> list[dict[str, float | str]]:
+            """
+            Convenience wrapper for explanation export.
+            """
+            return [e.to_dict() for e in self.explain(prefix, suggestions)]
 
-        return explanations
+
+                # Sorted for readability, not required by rank()
+                explanations.sort(key=lambda e: e.final_score, reverse=True)
+
+                return explanations
 
