@@ -51,15 +51,3 @@ class PredictionResult:
     """
     predictor: str
     suggestions: Sequence[ScoredSuggestion]
-
-
-@dataclass(frozen=True)
-class RankingExplanation:
-    """
-    Captures original score, learning signal and final result.
-    """
-    value: str
-    base_score: float
-    history_boost: float
-    final_score: float
-
