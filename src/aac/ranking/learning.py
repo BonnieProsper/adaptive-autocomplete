@@ -9,7 +9,7 @@ from aac.ranking.base import Ranker
 
 class LearningRanker(Ranker):
     def __init__(self, history: History, boost: float = 1.0) -> None:
-        self._history = history
+        self.history = history
         self._boost = boost
 
     def rank(
@@ -17,7 +17,7 @@ class LearningRanker(Ranker):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[Suggestion]:
-        counts = self._history.counts_for_prefix(prefix)
+        counts = self.history.counts_for_prefix(prefix)
 
         # no learning signal so it preserves order exactly
         if not counts:
