@@ -6,6 +6,7 @@ from aac.domain.history import History
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
+from aac.ranking.explanation import RankingExplanation
 
 
 class LearningRanker(Ranker, LearnsFromHistory):
@@ -54,3 +55,36 @@ class LearningRanker(Ranker, LearnsFromHistory):
         adjusted.sort(key=lambda s: s.score, reverse=True)
 
         return [s.suggestion for s in adjusted]
+
+    def explain(
+        self,
+        prefix: str,
+        suggestions: Sequence[ScoredSuggestion],
+    ) -> list[RankingExplanation]:
+        """
+        Produce explanations for how each suggestion's score is derived.
+        Does not mutate history or affect ranking.
+        """
+        counts = self.history.counts_for_prefix(prefix)
+
+        explanations: list[RankingExplanation] = []
+
+        for s in suggestions:
+            count = counts.get(s.suggestion.value, 0)
+            history_boost = count * self._boost
+            final_score = s.score + history_boost
+
+            explanations.append(
+                RankingExplanation(
+                    value=s.suggestion.value,
+                    base_score=s.score,
+                    history_boost=history_boost,
+                    final_score=final_score,
+                )
+            )
+
+        # Sorted for readability, not required by rank()
+        explanations.sort(key=lambda e: e.final_score, reverse=True)
+
+        return explanations
+
