@@ -1,7 +1,7 @@
 """Invariant test: learning must preserve order with no history signal."""
 
 from aac.domain.history import History
-from aac.domain.types import Suggestion, ScoredSuggestion
+from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.learning import LearningRanker
 
 
