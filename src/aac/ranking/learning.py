@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.history import History
-from aac.domain.types import ScoredSuggestion, Suggestion  
+from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
 

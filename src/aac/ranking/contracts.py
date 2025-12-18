@@ -2,6 +2,7 @@ from typing import Protocol, runtime_checkable
 
 from aac.domain.history import History
 
+
 @runtime_checkable
 class LearnsFromHistory(Protocol):
     """
