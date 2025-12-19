@@ -29,7 +29,10 @@ class FrequencyPredictor(Predictor):
                         suggestion=Suggestion(word),
                         score=score,
                         explanation=RankingExplanation.base(
-                            score=score,
+                            value=word,
+                            base_score=score,
+                            history_boost=0.0,
+                            final_score=score,
                             source="frequency",
                         ),
                     )
