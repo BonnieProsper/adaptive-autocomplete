@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from aac.ranking.explanation import RankingExplanation
+
 
 @dataclass(frozen=True)
 class CompletionContext:
