@@ -8,7 +8,9 @@ from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
+from aac.ranking.explanation import RankingExplanation
 from aac.ranking.score import ScoreRanker
+
 
 
 class AutocompleteEngine:
@@ -53,3 +55,12 @@ class AutocompleteEngine:
             record = getattr(predictor, "record", None)
             if callable(record):
                 record(prefix, value)
+
+
+    def explain(self, prefix: str) -> list[RankingExplanation]:
+        """
+        Returns per-suggestion ranking explanations for the given prefix.
+        Method is deterministic, non-mutating and fits with suggest() ordering
+        """
+        scored = self.score(prefix)
+        return [item.explanation for item in scored]
