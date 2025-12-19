@@ -12,7 +12,6 @@ from aac.ranking.explanation import RankingExplanation
 from aac.ranking.score import ScoreRanker
 
 
-
 class AutocompleteEngine:
     def __init__(
         self,
