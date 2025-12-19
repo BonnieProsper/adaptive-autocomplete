@@ -21,7 +21,7 @@ class RankingExplanation:
         return asdict(self)
 
     @staticmethod
-    def base(score: float, source: str) -> "RankingExplanation":
+    def base(score: float, source: str) -> RankingExplanation:
         return RankingExplanation(
             base_score=score,
             history_boost=0.0,
