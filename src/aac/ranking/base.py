@@ -11,6 +11,6 @@ class Ranker(ABC):
     def rank(
         self,
         prefix: str,
-        suggestions: Sequence[ScoredSuggestion],
+        suggestions: list[ScoredSuggestion],
     ) -> list[Suggestion]:
         ...
