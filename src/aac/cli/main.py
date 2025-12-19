@@ -11,7 +11,8 @@ from aac.ranking.learning import LearningRanker
 def build_engine() -> AutocompleteEngine:
     """
     Constructs the autocomplete engine.
-    This is intentionally centralized so CLI behavior is deterministic.
+
+    Centralized so CLI behavior is deterministic and testable.
     """
     history = History()
 
@@ -55,12 +56,14 @@ def handle_suggest(
             print(s.value)
         return
 
-    # explain mode
-    # removed/unused (use in future?): scored = engine.score(prefix)
     explanations = engine.explain(prefix)
 
-    for suggestion, explanation in zip(suggestions, explanations, strict=True):
-        print(f"{suggestion.value}")
+    for suggestion, explanation in zip(
+        suggestions,
+        explanations,
+        strict=True,
+    ):
+        print(suggestion.value)
         print(
             f"  base={explanation.base_score:.2f} "
             f"+ history={explanation.history_boost:.2f} "
