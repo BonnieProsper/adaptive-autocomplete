@@ -56,10 +56,10 @@ def handle_suggest(
         return
 
     # explain mode
-    scored = engine.score(prefix)
+    # removed/unused (use in future?): scored = engine.score(prefix)
     explanations = engine.explain(prefix)
 
-    for suggestion, explanation in zip(suggestions, explanations):
+    for suggestion, explanation in zip(suggestions, explanations, strict=True):
         print(f"{suggestion.value}")
         print(
             f"  base={explanation.base_score:.2f} "
