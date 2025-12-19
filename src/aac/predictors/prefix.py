@@ -13,6 +13,7 @@ class PrefixPredictor(Predictor):
     """
 
     def __init__(self, vocabulary: Iterable[str]) -> None:
+        # preserve order, remove duplicates
         self._vocabulary = tuple(dict.fromkeys(vocabulary))
 
     def predict(self, text: str) -> Sequence[ScoredSuggestion]:
@@ -24,10 +25,15 @@ class PrefixPredictor(Predictor):
 
         for word in self._vocabulary:
             if word.startswith(token) and word != token:
+                score = self._score(token, word)
                 suggestions.append(
                     ScoredSuggestion(
                         suggestion=Suggestion(word),
-                        score=self._score(token, word),
+                        score=score,
+                        explanation=RankingExplanation.base(
+                            score=score,
+                            source="prefix",
+                        ),
                     )
                 )
 
@@ -40,5 +46,5 @@ class PrefixPredictor(Predictor):
 
     @staticmethod
     def _score(prefix: str, word: str) -> float:
-        # Simple deterministic heuristic: shorter completions rank higher
+        # shorter completions rank higher
         return 1.0 / (len(word) - len(prefix) + 1)
