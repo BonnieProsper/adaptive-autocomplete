@@ -4,6 +4,7 @@ from collections.abc import Iterable, Sequence
 
 from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.ranking.explanation import RankingExplanation
 
 
 class PrefixPredictor(Predictor):
