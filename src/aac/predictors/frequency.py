@@ -4,9 +4,14 @@ from collections.abc import Sequence
 
 from aac.domain.predictor import Predictor
 from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.ranking.explanation import RankingExplanation
 
 
 class FrequencyPredictor(Predictor):
+    """
+    Suggests words based on observed global frequency.
+    """
+
     def __init__(self, frequencies: dict[str, int]) -> None:
         self._freq = dict(frequencies)
 
@@ -18,10 +23,15 @@ class FrequencyPredictor(Predictor):
 
         for word, count in self._freq.items():
             if word.startswith(text):
+                score = float(count)
                 results.append(
                     ScoredSuggestion(
                         suggestion=Suggestion(word),
-                        score=float(count),
+                        score=score,
+                        explanation=RankingExplanation.base(
+                            score=score,
+                            source="frequency",
+                        ),
                     )
                 )
 
