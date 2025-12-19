@@ -12,6 +12,13 @@ from aac.ranking.score import ScoreRanker
 
 
 class AutocompleteEngine:
+    """
+    Orchestrates prediction, ranking, learning, and explanation.
+
+    Single source of truth:
+    - History lives here (or is shared with ranker explicitly)
+    """
+
     def __init__(
         self,
         predictors: Sequence[Predictor],
@@ -42,18 +49,23 @@ class AutocompleteEngine:
         return self._ranker.rank(prefix, candidates)
 
     def suggest(self, prefix: str) -> list[Suggestion]:
-        scored = self.score(prefix)
-        return [item.suggestion for item in scored]
+        """
+        Public API for consumers who don't care about scores.
+        """
+        return [s.suggestion for s in self.score(prefix)]
 
     def explain(self, prefix: str) -> list[RankingExplanation]:
-        scored = self.score(prefix)
-        return [item.explanation for item in scored]
+        """
+        Public API for explainability.
+        """
+        return [s.explanation for s in self.score(prefix)]
 
     def record_selection(self, prefix: str, value: str) -> None:
-        # CENTRAL LEARNING RECORD
+        """
+        Records user feedback and propagates learning.
+        """
         self._history.record(prefix, value)
 
-        # Optional predictor learning
         for predictor in self._predictors:
             record = getattr(predictor, "record", None)
             if callable(record):
