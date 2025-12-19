@@ -42,6 +42,7 @@ class ScoredSuggestion:
     """
     suggestion: Suggestion
     score: float
+    explanation: RankingExplanation
 
 
 @dataclass(frozen=True)
