@@ -1,8 +1,8 @@
-# test that explain mode doesnt mutate state
 from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
-from aac.ranking.learning import LearningRanke
+from aac.ranking.learning import LearningRanker
+
 
 def test_cli_explain_does_not_mutate_history() -> None:
     history = History()
@@ -12,4 +12,5 @@ def test_cli_explain_does_not_mutate_history() -> None:
     )
 
     engine.explain("he")
+
     assert history.entries() == ()
