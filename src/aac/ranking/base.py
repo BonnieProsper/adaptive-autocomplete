@@ -13,8 +13,4 @@ class Ranker(ABC):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[ScoredSuggestion]:
-        """
-        Rank scored suggestions.
-        Deterministic and non-mutating.
-        """
-        raise NotImplementedError
+        ...
