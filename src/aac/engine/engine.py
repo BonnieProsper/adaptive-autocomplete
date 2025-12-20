@@ -71,10 +71,14 @@ class AutocompleteEngine:
         return [s.suggestion for s in ranked]
 
     def explain(self, prefix: str) -> list[RankingExplanation]:
-        """
-        Public API for explainability.
-        """
-        return [s.explanation for s in self.score(prefix)]
+        """Public API for explainability."""
+        scored = self.score(prefix)
+        return [
+            item.explanation
+            for item in scored
+            if item.explanation is not None
+        ]
+
 
     def record_selection(self, prefix: str, value: str) -> None:
         """
