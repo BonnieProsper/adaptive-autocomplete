@@ -9,10 +9,6 @@ from aac.ranking.explanation import RankingExplanation
 
 
 class HistoryPredictor(Predictor):
-    """
-    Suggests completions based on exact historical prefix matches.
-    """
-
     def __init__(self, history: History, weight: float = 1.0) -> None:
         self._history = history
         self._weight = weight
@@ -29,12 +25,13 @@ class HistoryPredictor(Predictor):
 
         for value, count in counts.items():
             score = count * self._weight
+
             results.append(
                 ScoredSuggestion(
                     suggestion=Suggestion(value),
                     score=score,
                     explanation=RankingExplanation.base(
-                        value=word,
+                        value=value,
                         score=score,
                         source="history",
                     ),
