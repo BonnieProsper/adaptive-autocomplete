@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from aac.domain.types import ScoredSuggestion
+from aac.domain.types import ScoredSuggestion, Suggestion
 
 
 class Ranker(ABC):
@@ -12,5 +10,5 @@ class Ranker(ABC):
         self,
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
-    ) -> list[ScoredSuggestion]:
-        ...
+    ) -> list[Suggestion]:
+        pass
