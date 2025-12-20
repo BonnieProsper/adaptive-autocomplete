@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import ScoredSuggestion
 
 
 class Ranker(ABC):
@@ -10,6 +11,10 @@ class Ranker(ABC):
     def rank(
         self,
         prefix: str,
-        suggestions: list[ScoredSuggestion],
-    ) -> list[Suggestion]:
-        ...
+        suggestions: Sequence[ScoredSuggestion],
+    ) -> list[ScoredSuggestion]:
+        """
+        Rank scored suggestions.
+        Deterministic and non-mutating.
+        """
+        raise NotImplementedError
