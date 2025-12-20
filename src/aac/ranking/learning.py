@@ -78,7 +78,19 @@ class LearningRanker(Ranker, LearnsFromHistory):
     def explain_as_dicts(
         self,
         prefix: str,
-        suggestions: Sequence[ScoredSuggestion],
+        suggestions: list[ScoredSuggestion],
     ) -> list[dict[str, float | str]]:
-        return [e.to_dict() for e in self.explain(prefix, suggestions)]
+        explanations = self.explain(prefix, suggestions)
+
+        return [
+            {
+                "value": e.value,
+                "base_score": e.base_score,
+                "history_boost": e.history_boost,
+                "final_score": e.final_score,
+            }
+            for e in explanations
+            if e is not None
+        ]
+
 
