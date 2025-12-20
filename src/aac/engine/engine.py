@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -48,11 +49,27 @@ class AutocompleteEngine:
 
         return self._ranker.rank(prefix, candidates)
 
-    def suggest(self, prefix: str) -> list[Suggestion]:
-        """
-        Public API for consumers who don't care about scores.
-        """
-        return [s.suggestion for s in self.score(prefix)]
+    def suggest(self, text: str) -> list[Suggestion]:
+        all_suggestions: dict[str, ScoredSuggestion] = {}
+
+        for predictor in self._predictors:
+            for scored in predictor.predict(text):
+                value = scored.suggestion.value
+
+                if value not in all_suggestions:
+                    all_suggestions[value] = scored
+                else:
+                    # Keep the higher score
+                    if scored.score > all_suggestions[value].score:
+                        all_suggestions[value] = scored
+
+        ranked = sorted(
+            all_suggestions.values(),
+            key=lambda s: s.score,
+            reverse=True,
+        )
+
+        return [s.suggestion for s in ranked]
 
     def explain(self, prefix: str) -> list[RankingExplanation]:
         """
