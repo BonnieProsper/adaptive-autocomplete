@@ -30,11 +30,9 @@ class PrefixPredictor(Predictor):
                     ScoredSuggestion(
                         suggestion=Suggestion(word),
                         score=score,
-                        explanation=RankingExplanation.base( # keep or take .base??
+                        explanation=RankingExplanation.base( 
                             value=word,
-                            base_score=score,
-                            history_boost=0.0,
-                            final_score=score,
+                            score=score,
                             source="prefix",
                         ),
                     )
