@@ -33,7 +33,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         counts = self.history.counts_for_prefix(prefix)
 
-        # No learning signal = preserve order and explanations
+        # No learning signal = preserve order
         if not counts:
             return list(suggestions)
 
@@ -53,10 +53,10 @@ class LearningRanker(Ranker, LearnsFromHistory):
                         base_score=s.score,
                         history_boost=history_boost,
                         final_score=final_score,
+                        source="learning",
                     ),
                 )
             )
 
-        # Stable sort 
         adjusted.sort(key=lambda s: s.score, reverse=True)
         return adjusted
