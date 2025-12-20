@@ -21,8 +21,17 @@ class RankingExplanation:
         return asdict(self)
 
     @staticmethod
-    def base(score: float, source: str) -> RankingExplanation:
+    def base(
+        *,
+        value: str,
+        score: float,
+        source: str,
+    ) -> RankingExplanation:
+        """
+        Factory for predictor-originated explanations (no learning applied).
+        """
         return RankingExplanation(
+            value=value,
             base_score=score,
             history_boost=0.0,
             final_score=score,
