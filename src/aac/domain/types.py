@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from aac.ranking.explanation import RankingExplanation
+if TYPE_CHECKING:
+    from aac.ranking.explanation import RankingExplanation
 
 
 @dataclass(frozen=True)
@@ -20,12 +22,8 @@ class CompletionContext:
         """
         if self.cursor_pos is None:
             return self.text.split()[-1] if self.text else ""
-
-        # 'cursor_pos' is given as a 1-based index (cursor between characters),
-        # so convert to a Python slice index by subtracting 1. Ensure non-negative.
         pos = max(0, self.cursor_pos - 1)
-        prefix_part = self.text[:pos]
-        parts = prefix_part.split()
+        parts = self.text[:pos].split()
         return parts[-1] if parts else ""
 
 
@@ -44,7 +42,7 @@ class ScoredSuggestion:
     """
     suggestion: Suggestion
     score: float
-    explanation: RankingExplanation
+    explanation: "RankingExplanation"
 
 
 @dataclass(frozen=True)
