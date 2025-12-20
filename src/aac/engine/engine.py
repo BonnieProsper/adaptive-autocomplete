@@ -37,39 +37,30 @@ class AutocompleteEngine:
             self._history = History()
 
     def score(self, prefix: str) -> list[ScoredSuggestion]:
-        """
-        Returns ranked suggestions with scores and explanations.
-        Deterministic and non-mutating.
-        """
-        candidates: list[ScoredSuggestion] = []
+        aggregated: dict[str, ScoredSuggestion] = {}
 
         for predictor in self._predictors:
-            candidates.extend(predictor.predict(prefix))
+            for scored in predictor.predict(prefix):
+                key = scored.suggestion.value
 
-        return self._ranker.rank(prefix, candidates)
-
-    def suggest(self, text: str) -> list[Suggestion]:
-        all_suggestions: dict[str, ScoredSuggestion] = {}
-
-        for predictor in self._predictors:
-            for scored in predictor.predict(text):
-                value = scored.suggestion.value
-
-                if value not in all_suggestions:
-                    all_suggestions[value] = scored
+                if key not in aggregated:
+                    aggregated[key] = scored
                 else:
-                    # Keep the higher score
-                    if scored.score > all_suggestions[value].score:
-                        all_suggestions[value] = scored
+                    prev = aggregated[key]
+                    aggregated[key] = ScoredSuggestion(
+                        suggestion=prev.suggestion,
+                        score=prev.score + scored.score,
+                        explanation=prev.explanation,
+                    )
 
-        ranked = sorted(
-            all_suggestions.values(),
-            key=lambda s: s.score,
-            reverse=True,
-        )
+        return list(aggregated.values())
 
-        return [s.suggestion for s in ranked]
 
+    def suggest(self, prefix: str) -> list[Suggestion]:
+        scored = self.score(prefix)
+        return self._ranker.rank(prefix, scored)
+
+    
     def explain(self, prefix: str) -> list[RankingExplanation]:
         """Public API for explainability."""
         scored = self.score(prefix)
