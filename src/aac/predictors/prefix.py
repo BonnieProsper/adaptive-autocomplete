@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -16,7 +16,8 @@ class PrefixPredictor(Predictor):
         # preserve order, remove duplicates
         self._vocabulary = tuple(dict.fromkeys(vocabulary))
 
-    def predict(self, text: str) -> Sequence[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        text = ctx.text
         token = self._last_token(text)
         if not token:
             return []
