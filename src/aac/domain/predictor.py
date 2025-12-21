@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Protocol
 
-from aac.domain.types import ScoredSuggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion
 
 
 class Predictor(Protocol):
@@ -13,5 +13,5 @@ class Predictor(Protocol):
     given input text.
     """
 
-    def predict(self, text: str) -> Sequence[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         ...
