@@ -54,8 +54,8 @@ class TriePrefixPredictor(Predictor):
     def name(self) -> str:
         return "trie_prefix"
 
-    def predict(self, context: CompletionContext) -> list[ScoredSuggestion]:
-        prefix = context.prefix()
+    def predict(self, text: str) -> list[ScoredSuggestion]:
+        prefix = text.rstrip().split()[-1] if text else ""
         if not prefix:
             return []
 
