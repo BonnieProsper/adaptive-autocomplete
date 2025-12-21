@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -15,7 +15,8 @@ class FrequencyPredictor(Predictor):
     def __init__(self, frequencies: dict[str, int]) -> None:
         self._freq = dict(frequencies)
 
-    def predict(self, text: str) -> Sequence[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        text = ctx.text
         if not text:
             return []
 
