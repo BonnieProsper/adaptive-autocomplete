@@ -77,3 +77,23 @@ class TriePrefixPredictor(Predictor):
             )
             for word in matches
         ]
+
+
+    def _collect(self, prefix: str) -> list[str]:
+        node = self._root
+        for ch in prefix:
+            if ch not in node.children:
+                return []
+            node = node.children[ch]
+
+        results: list[str] = []
+
+        def dfs(n: TrieNode) -> None:
+            if n.is_terminal and n.value is not None:
+                results.append(n.value)
+            for child in n.children.values():
+                dfs(child)
+
+        dfs(node)
+        return results
+
