@@ -8,7 +8,7 @@ from aac.domain.types import CompletionContext, ScoredSuggestion
 class Predictor(Protocol):
     """Protocol for predictor implementations used by the engine.
 
-    Implementations should return a sequence of `ScoredSuggestion` for a
+    Implementations should return a list of 'ScoredSuggestion' for a
     given input text.
     """
 
