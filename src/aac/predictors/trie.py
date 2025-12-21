@@ -69,7 +69,13 @@ class TriePrefixPredictor(Predictor):
             ScoredSuggestion(
                 suggestion=Suggestion(value=word),
                 score=1.0,
-                explanation=RankingExplanation(source="trie_prefix"),
+                explanation=RankingExplanation(
+                    value=word,
+                    base_score=1.0,
+                    history_boost=0.0,
+                    final_score=1.0,
+                    source="trie_prefix",
+                ),
             )
             for word in matches
         ]
