@@ -56,7 +56,6 @@ class TriePrefixPredictor(Predictor):
 
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         text = ctx.text
-
         if not text:
             return []
 
@@ -70,10 +69,7 @@ class TriePrefixPredictor(Predictor):
             ScoredSuggestion(
                 suggestion=Suggestion(value=word),
                 score=1.0,
-                explanation=RankingExplanation(
-                    source="trie_prefix",
-                    details={"prefix": prefix},
-                ),
+                explanation=RankingExplanation(source="trie_prefix"),
             )
             for word in matches
         ]
