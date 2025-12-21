@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -54,22 +54,26 @@ class TriePrefixPredictor(Predictor):
     def name(self) -> str:
         return "trie_prefix"
 
-    def predict(self, text: str) -> list[ScoredSuggestion]:
-        prefix = text.rstrip().split()[-1] if text else ""
-        if not prefix:
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        text = ctx.text
+
+        if not text:
             return []
 
-        matches = self._trie.find_prefix(prefix)
+        prefix = text.rstrip().split()[-1]
+
+        matches = self._collect(prefix)
+        if not matches:
+            return []
 
         return [
             ScoredSuggestion(
-                suggestion=Suggestion(value),
+                suggestion=Suggestion(value=word),
                 score=1.0,
-                explanation=RankingExplanation.base(
-                    value=value,
-                    score=1.0,
-                    source=self.name,
+                explanation=RankingExplanation(
+                    source="trie_prefix",
+                    details={"prefix": prefix},
                 ),
             )
-            for value in matches
+            for word in matches
         ]
