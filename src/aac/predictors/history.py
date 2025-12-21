@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 from aac.domain.history import History
 from aac.domain.predictor import Predictor
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -13,7 +13,8 @@ class HistoryPredictor(Predictor):
         self._history = history
         self._weight = weight
 
-    def predict(self, text: str) -> Sequence[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        text = ctx.text
         if not text:
             return []
 
