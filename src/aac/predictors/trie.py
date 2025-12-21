@@ -44,3 +44,33 @@ class Trie:
             out.append(node.value)
         for child in node.children.values():
             self._collect(child, out)
+
+
+class TriePrefixPredictor(Predictor):
+    def __init__(self, vocabulary: Iterable[str]) -> None:
+        self._trie = Trie(vocabulary)
+
+    @property
+    def name(self) -> str:
+        return "trie_prefix"
+
+    def predict(self, context: CompletionContext) -> list[ScoredSuggestion]:
+        prefix = context.prefix()
+        if not prefix:
+            return []
+
+        matches = self._trie.find_prefix(prefix)
+
+        return [
+            ScoredSuggestion(
+                suggestion=Suggestion(value),
+                score=1.0,
+                explanation=RankingExplanation.base(
+                    value=value,
+                    score=1.0,
+                    source=self.name,
+                ),
+            )
+            for value in matches
+        ]
+
