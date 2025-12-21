@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Dict, Iterable
 
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.domain.predictor import Predictor
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.ranking.explanation import RankingExplanation
 
 
 @dataclass
 class TrieNode:
-    children: Dict[str, TrieNode] = field(default_factory=dict)
+    children: dict[str, TrieNode] = field(default_factory=dict)
     is_terminal: bool = False
     value: str | None = None
 
@@ -73,4 +73,3 @@ class TriePrefixPredictor(Predictor):
             )
             for value in matches
         ]
-
