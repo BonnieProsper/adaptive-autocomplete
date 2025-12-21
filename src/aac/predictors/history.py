@@ -32,7 +32,11 @@ class HistoryPredictor(Predictor):
                     suggestion=Suggestion(value),
                     score=score,
                     explanation=RankingExplanation.base(
-                        value=value,
+                        # old version, keep in??: value=value,
+                        value=word,
+                        base_score=1.0,
+                        history_boost=0.0,
+                        final_score=1.0,
                         score=score,
                         source="history",
                     ),
