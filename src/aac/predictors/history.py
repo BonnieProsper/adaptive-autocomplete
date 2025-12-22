@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from aac.domain.history import History
 from aac.domain.predictor import Predictor
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, ensure_context
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -18,9 +18,7 @@ class HistoryPredictor(Predictor):
 
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
-        if isinstance(ctx, str):
-            ctx = CompletionContext(ctx)
-            
+        ctx = ensure_context(ctx) 
         text = ctx.text
         if not text:
             return []
