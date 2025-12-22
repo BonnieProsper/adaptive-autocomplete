@@ -17,7 +17,10 @@ class HistoryPredictor(Predictor):
         return "history"
 
 
-    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
+        if isinstance(ctx, str):
+            ctx = CompletionContext(ctx)
+            
         text = ctx.text
         if not text:
             return []
