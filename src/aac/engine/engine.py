@@ -43,8 +43,10 @@ class AutocompleteEngine:
         """
         Collects and aggregates scored suggestions from all predictors.
 
-        Aggregation rule:
-        - Same suggestion value → scores are summed
+
+        Aggregation invariants:
+        - Suggestions with identical values are merged
+        - Scores are summed
         - Explanation is preserved from the first producer
         """
         aggregated: dict[str, ScoredSuggestion] = {}
