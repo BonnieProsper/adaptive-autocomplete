@@ -47,9 +47,6 @@ class Trie:
 class TriePrefixPredictor(Predictor):
     def __init__(self, words: Iterable[str]) -> None:
         self._trie = Trie(words)
-        self._root = TrueNode()
-        for word in words:
-            self._insert(word)
 
     @property
     def name(self) -> str:
