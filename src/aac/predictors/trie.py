@@ -17,17 +17,19 @@ class TrieNode:
 
 class Trie:
     def __init__(self, words: Iterable[str]) -> None:
-        self._trie = Trie(words)
+        self.root = TrieNode()
+        for word in words:
+            self.insert(word)
 
-    def _insert(self, word: str) -> None:
-        node = self._root
+    def insert(self, word: str) -> None:
+        node = self.root
         for ch in word:
             node = node.children.setdefault(ch, TrieNode())
         node.is_terminal = True
         node.value = word
 
     def find_prefix(self, prefix: str) -> list[str]:
-        node = self._root
+        node = self.root
         for ch in prefix:
             if ch not in node.children:
                 return []
@@ -58,42 +60,17 @@ class TriePrefixPredictor(Predictor):
             return []
 
         prefix = text.rstrip().split()[-1]
-
-        matches = self._collect(prefix)
-        if not matches:
-            return []
+        matches = self._trie.find_prefix(prefix)
 
         return [
             ScoredSuggestion(
                 suggestion=Suggestion(value=word),
                 score=1.0,
-                explanation=RankingExplanation(
+                explanation=RankingExplanation.base(
                     value=word,
-                    base_score=1.0,
-                    history_boost=0.0,
-                    final_score=1.0,
-                    source="trie_prefix",
+                    score=1.0,
+                    source=self.name,
                 ),
             )
             for word in matches
         ]
-
-
-    def _collect(self, prefix: str) -> list[str]:
-        node = self._root
-        for ch in prefix:
-            if ch not in node.children:
-                return []
-            node = node.children[ch]
-
-        results: list[str] = []
-
-        def dfs(n: TrieNode) -> None:
-            if n.is_terminal and n.value is not None:
-                results.append(n.value)
-            for child in n.children.values():
-                dfs(child)
-
-        dfs(node)
-        return results
-
