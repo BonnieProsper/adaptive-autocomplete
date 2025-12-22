@@ -31,11 +31,8 @@ class HistoryPredictor(Predictor):
                     score=score,
                     explanation=RankingExplanation.base(
                         value=value,
-                        base_score=1.0,
-                        history_boost=0.0,
-                        final_score=1.0,
-                        score=score,
-                        source="history",
+                        score=1.0,
+                        source=self.name,
                     ),
                 )
             )
