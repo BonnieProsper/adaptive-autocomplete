@@ -4,7 +4,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, ensure_context
+from aac.domain.types import (
+    CompletionContext,
+    ScoredSuggestion,
+    Suggestion,
+    ensure_context,
+)
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -17,38 +22,57 @@ class TrieNode:
 
 class Trie:
     def __init__(self, words: Iterable[str]) -> None:
-        self.root = TrieNode()
+        self._root = TrieNode()
         for word in words:
             self.insert(word)
 
     def insert(self, word: str) -> None:
-        node = self.root
+        node = self._root
         for ch in word:
             node = node.children.setdefault(ch, TrieNode())
         node.is_terminal = True
         node.value = word
 
-    def find_prefix(self, prefix: str) -> list[str]:
-        node = self.root
+    def find_prefix(self, prefix: str, *, limit: int) -> list[str]:
+        """
+        Return up to `limit` words that start with the given prefix.
+        Deterministic order guaranteed.
+        """
+        node = self._root
         for ch in prefix:
             if ch not in node.children:
                 return []
             node = node.children[ch]
 
         results: list[str] = []
-        self._collect(node, results)
+        self._collect(node, results, limit)
         return results
 
-    def _collect(self, node: TrieNode, out: list[str]) -> None:
+    def _collect(self, node: TrieNode, out: list[str], limit: int) -> None:
+        if len(out) >= limit:
+            return
+
         if node.is_terminal and node.value is not None:
             out.append(node.value)
-        for child in node.children.values():
-            self._collect(child, out)
+            if len(out) >= limit:
+                return
+
+        # Deterministic traversal
+        for key in sorted(node.children):
+            self._collect(node.children[key], out, limit)
+            if len(out) >= limit:
+                return
 
 
 class TriePrefixPredictor(Predictor):
-    def __init__(self, words: Iterable[str]) -> None:
+    def __init__(
+        self,
+        words: Iterable[str],
+        *,
+        max_results: int = 10,
+    ) -> None:
         self._trie = Trie(words)
+        self._max_results = max_results
 
     @property
     def name(self) -> str:
@@ -56,13 +80,17 @@ class TriePrefixPredictor(Predictor):
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
-        
         text = ctx.text
+
         if not text:
             return []
 
         prefix = text.rstrip().split()[-1]
-        matches = self._trie.find_prefix(prefix)
+
+        matches = self._trie.find_prefix(
+            prefix,
+            limit=self._max_results,
+        )
 
         return [
             ScoredSuggestion(
