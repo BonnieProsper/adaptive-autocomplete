@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, ensure_context
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -21,8 +21,7 @@ class PrefixPredictor(Predictor):
         return "prefix"
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
-        if isinstance(ctx, str):
-            ctx = CompletionContext(ctx)
+        ctx = ensure_context(ctx)
         
         text = ctx.text
         token = self._last_token(text)
