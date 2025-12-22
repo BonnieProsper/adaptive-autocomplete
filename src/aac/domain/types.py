@@ -44,6 +44,10 @@ class ScoredSuggestion:
     score: float
     explanation: RankingExplanation | None = None
 
+    @property
+    def value(self) -> str:
+        return self.suggestion.value
+
 
 @dataclass(frozen=True)
 class PredictionResult:
