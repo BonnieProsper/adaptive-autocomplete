@@ -7,6 +7,10 @@ from dataclasses import asdict, dataclass
 class RankingExplanation:
     """
     Explains how a final ranking score was produced for a suggestion.
+    Invariants:
+    - base_score: score produced by predictor
+    - history_boost: adjustment from learned signals
+    - final_score: base_score + history_boost (+ ranker effects)
     """
     value: str
     base_score: float
