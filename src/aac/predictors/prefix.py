@@ -16,6 +16,10 @@ class PrefixPredictor(Predictor):
         # preserve order, remove duplicates
         self._vocabulary = tuple(dict.fromkeys(vocabulary))
 
+    @property
+    def name(self) -> str:
+        return "prefix"
+
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         text = ctx.text
         token = self._last_token(text)
