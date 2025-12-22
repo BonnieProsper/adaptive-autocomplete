@@ -20,7 +20,10 @@ class PrefixPredictor(Predictor):
     def name(self) -> str:
         return "prefix"
 
-    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
+        if isinstance(ctx, str):
+            ctx = CompletionContext(ctx)
+        
         text = ctx.text
         token = self._last_token(text)
         if not token:
