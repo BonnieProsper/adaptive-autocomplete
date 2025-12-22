@@ -73,7 +73,7 @@ class AutocompleteEngine:
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        return self._ranker.rank(ctx, scored)
+        return self._ranker.rank(ctx.text, scored)
 
     def explain(self, text: str) -> list[RankingExplanation]:
         """
