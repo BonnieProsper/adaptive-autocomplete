@@ -11,6 +11,7 @@ class Predictor(Protocol):
     Implementations should return a list of 'ScoredSuggestion' for a
     given input text.
     """
+    name: str
 
-    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+    def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ...
