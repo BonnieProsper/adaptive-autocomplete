@@ -11,6 +11,12 @@ class HistoryPredictor(Predictor):
         self._history = history
         self._weight = weight
 
+    
+    @property
+    def name(self) -> str:
+        return "history"
+
+
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         text = ctx.text
         if not text:
