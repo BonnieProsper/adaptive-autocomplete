@@ -17,9 +17,7 @@ class TrieNode:
 
 class Trie:
     def __init__(self, words: Iterable[str]) -> None:
-        self._root = TrieNode()
-        for word in words:
-            self._insert(word)
+        self._trie = Trie(words)
 
     def _insert(self, word: str) -> None:
         node = self._root
