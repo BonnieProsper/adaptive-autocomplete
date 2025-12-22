@@ -13,6 +13,10 @@ class FrequencyPredictor(Predictor):
     def __init__(self, frequencies: dict[str, int]) -> None:
         self._freq = dict(frequencies)
 
+    @property
+    def name(self) -> str:
+        return "frequency"
+
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         text = ctx.text
         if not text:
@@ -29,7 +33,7 @@ class FrequencyPredictor(Predictor):
                         score=score,
                         explanation=RankingExplanation.base(
                             value=word,
-                            score=1.0,
+                            score=score,
                             source=self.name,
                         ),
                     )
