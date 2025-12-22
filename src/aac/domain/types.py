@@ -27,6 +27,13 @@ class CompletionContext:
         return parts[-1] if parts else ""
 
 
+    def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
+        if isinstance(ctx, str):
+            return CompletionContext(ctx)
+        return ctx
+
+
+
 @dataclass(frozen=True)
 class Suggestion:
     """
