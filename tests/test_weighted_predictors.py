@@ -1,4 +1,4 @@
-from aac.domain.types import CompletionContext, ScoredCompletion, WeightedPredictor
+from aac.domain.types import CompletionContext, ScoredSuggestion, WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
 
 
@@ -9,7 +9,7 @@ class DummyPredictor:
 
     def predict(self, context: CompletionContext):
         return [
-            ScoredCompletion(
+            ScoredSuggestion(
                 text="hello",
                 score=self._score,
                 explanation=self.name,
