@@ -70,3 +70,8 @@ class Predictor(Protocol):
     def predict(self, context: "CompletionContext") -> list["ScoredCompletion"]:
         ...
 
+
+@dataclass(frozen=True)
+class WeightedPredictor:
+    predictor: Predictor
+    weight: float = 1.0
