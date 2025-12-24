@@ -12,13 +12,16 @@ def build_engine() -> AutocompleteEngine:
     """
     Constructs the autocomplete engine.
 
-    Centralized so CLI behavior is deterministic and testable.
+    Centralized so CLI behavior is deterministic, testable,
+    and consistent with production usage.
     """
     history = History()
 
-    return AutocompleteEngine(
+    return AutocompleteEngine.from_predictors(
         predictors=[
-            PrefixPredictor(["hello", "help", "helium", "hero"]),
+            PrefixPredictor(
+                vocabulary=["hello", "help", "helium", "hero"],
+            ),
         ],
         ranker=LearningRanker(history),
     )
@@ -26,10 +29,21 @@ def build_engine() -> AutocompleteEngine:
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="aac")
-    subparsers = parser.add_subparsers(dest="command", required=True)
 
-    suggest = subparsers.add_parser("suggest")
-    suggest.add_argument("prefix", type=str)
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
+    )
+
+    suggest = subparsers.add_parser(
+        "suggest",
+        help="Generate autocomplete suggestions",
+    )
+    suggest.add_argument(
+        "prefix",
+        type=str,
+        help="Input text to complete",
+    )
     suggest.add_argument(
         "--explain",
         action="store_true",
@@ -37,11 +51,14 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-
     engine = build_engine()
 
     if args.command == "suggest":
-        handle_suggest(engine, args.prefix, args.explain)
+        handle_suggest(
+            engine=engine,
+            prefix=args.prefix,
+            explain=args.explain,
+        )
 
 
 def handle_suggest(
@@ -49,11 +66,14 @@ def handle_suggest(
     prefix: str,
     explain: bool,
 ) -> None:
+    """
+    Handles the `suggest` CLI command.
+    """
     suggestions = engine.suggest(prefix)
 
     if not explain:
-        for s in suggestions:
-            print(s.value)
+        for suggestion in suggestions:
+            print(suggestion.value)
         return
 
     explanations = engine.explain(prefix)
