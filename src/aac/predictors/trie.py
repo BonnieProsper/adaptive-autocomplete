@@ -65,6 +65,8 @@ class Trie:
 
 
 class TriePrefixPredictor(Predictor):
+    name = "trie_prefix"
+    
     def __init__(
         self,
         words: Iterable[str],
@@ -74,9 +76,6 @@ class TriePrefixPredictor(Predictor):
         self._trie = Trie(words)
         self._max_results = max_results
 
-    @property
-    def name(self) -> str:
-        return "trie_prefix"
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
