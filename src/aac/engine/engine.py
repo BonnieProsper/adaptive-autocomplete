@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.history import History
+from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
-    Predictor,
     ScoredSuggestion,
     Suggestion,
     WeightedPredictor,
@@ -22,18 +22,26 @@ class AutocompleteEngine:
 
     Architectural invariants:
     - Engine owns the CompletionContext lifecycle
-    - Predictors produce ScoredSuggestions
-    - Rankers order suggestions and may learn from history
+    - Internally, predictors are ALWAYS WeightedPredictor
     - History has a single source of truth
     """
 
     def __init__(
         self,
-        predictors: Sequence[WeightedPredictor],
+        predictors: Sequence[Predictor | WeightedPredictor],
         ranker: Ranker | None = None,
         history: History | None = None,
     ) -> None:
-        self._predictors = list(predictors)
+        # Normalize predictors ONCE at the boundary
+        self._predictors: list[WeightedPredictor] = []
+        for p in predictors:
+            if isinstance(p, WeightedPredictor):
+                self._predictors.append(p)
+            else:
+                self._predictors.append(
+                    WeightedPredictor(predictor=p, weight=1.0)
+                )
+
         self._ranker = ranker or ScoreRanker()
 
         # SINGLE SOURCE OF TRUTH FOR HISTORY
@@ -87,6 +95,12 @@ class AutocompleteEngine:
         scored = self._score(ctx)
         return self._ranker.rank(ctx.text, scored)
 
+    def complete(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        """
+        Lower-level API used by tests and internal consumers.
+        """
+        return self._score(ctx)
+
     def explain(self, text: str) -> list[RankingExplanation]:
         """
         Public API: returns explainability objects for the current input.
@@ -94,11 +108,14 @@ class AutocompleteEngine:
         ctx = CompletionContext(text)
         scored = self._score(ctx)
 
-        return [
-            item.explanation
-            for item in scored
-            if item.explanation is not None
-        ]
+        ranked = self._ranker.rank(ctx.text, scored)
+
+        explanations: list[RankingExplanation] = []
+        for item in ranked:
+            if item.explanation is not None:
+                explanations.append(item.explanation)
+
+        return explanations
 
     def record_selection(self, text: str, value: str) -> None:
         """
@@ -116,18 +133,3 @@ class AutocompleteEngine:
             record = getattr(weighted.predictor, "record", None)
             if callable(record):
                 record(ctx, value)
-
-    @classmethod
-    def from_predictors(
-        cls,
-        predictors: Sequence[Predictor],
-        ranker: Ranker | None = None,
-    ) -> AutocompleteEngine:
-        """
-        Backwards-compatible constructor for unweighted predictors.
-        """
-        weighted = [
-            WeightedPredictor(predictor=p, weight=1.0)
-            for p in predictors
-        ]
-        return cls(weighted, ranker=ranker)
