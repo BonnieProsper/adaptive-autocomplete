@@ -1,4 +1,4 @@
-from aac.domain.types import CompletionContext, ScoredSuggestion, WeightedPredictor
+from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
 
 
@@ -10,9 +10,9 @@ class DummyPredictor:
     def predict(self, context: CompletionContext):
         return [
             ScoredSuggestion(
-                text="hello",
+                suggestion=Suggestion(value="hello"),
                 score=self._score,
-                explanation=self.name,
+                explanation=None,
             )
         ]
 
@@ -31,4 +31,5 @@ def test_weighting_affects_score():
     ctx = CompletionContext(text="h")
     results = engine.complete(ctx)
 
+    assert len(results) == 1
     assert results[0].score == 4.0
