@@ -106,3 +106,17 @@ class AutocompleteEngine:
             record = getattr(predictor, "record", None)
             if callable(record):
                 record(ctx, value)
+
+
+        @classmethod
+        def from_predictors(
+            cls,
+            predictors: Sequence[Predictor],
+            ranker: Ranker | None = None,
+        ) -> "AutocompleteEngine":
+            weighted = [
+                WeightedPredictor(predictor=p, weight=1.0)
+                for p in predictors
+            ]
+            return cls(weighted, ranker=ranker)
+
