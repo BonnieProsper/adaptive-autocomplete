@@ -1,5 +1,6 @@
-from aac.engine.engine import AutocompleteEngine
 from aac.domain.types import WeightedPredictor, CompletionContext, ScoredCompletion
+from aac.engine.engine import AutocompleteEngine
+
 
 class DummyPredictor:
     def __init__(self, name: str, score: float):
