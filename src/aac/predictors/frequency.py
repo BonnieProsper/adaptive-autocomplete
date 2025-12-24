@@ -9,13 +9,10 @@ class FrequencyPredictor(Predictor):
     """
     Suggests words based on observed global frequency.
     """
+    name = "frequency"
 
     def __init__(self, frequencies: dict[str, int]) -> None:
         self._freq = dict(frequencies)
-
-    @property
-    def name(self) -> str:
-        return "frequency"
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
