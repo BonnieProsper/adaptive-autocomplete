@@ -7,14 +7,11 @@ from aac.ranking.explanation import RankingExplanation
 
 
 class HistoryPredictor(Predictor):
+    name = "history"
+    
     def __init__(self, history: History, weight: float = 1.0) -> None:
         self._history = history
         self._weight = weight
-
-    
-    @property
-    def name(self) -> str:
-        return "history"
 
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
