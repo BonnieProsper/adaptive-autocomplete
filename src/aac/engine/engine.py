@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.history import History
-from aac.domain.predictor import Predictor
+from aac.domain.predictor import Predictor, WeightedPredictor
 from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
@@ -24,7 +24,7 @@ class AutocompleteEngine:
 
     def __init__(
         self,
-        predictors: Sequence[Predictor],
+        predictors: Sequence[WeightedPredictor],
         ranker: Ranker | None = None,
         history: History | None = None,
     ) -> None:
