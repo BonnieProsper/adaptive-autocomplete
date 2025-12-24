@@ -1,4 +1,4 @@
-from aac.domain.types import CompletionContext, Suggestion
+from aac.domain.types import CompletionContext
 from aac.predictors.prefix import PrefixPredictor
 
 
