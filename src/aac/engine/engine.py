@@ -3,8 +3,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.history import History
-from aac.domain.predictor import Predictor, WeightedPredictor
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
+from aac.domain.types import (
+    CompletionContext,
+    Predictor,
+    ScoredSuggestion,
+    Suggestion,
+    WeightedPredictor,
+)
 from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
 from aac.ranking.explanation import RankingExplanation
@@ -43,27 +48,32 @@ class AutocompleteEngine:
         """
         Collects and aggregates scored suggestions from all predictors.
 
-
         Aggregation invariants:
         - Suggestions with identical values are merged
         - Scores are summed
+        - Predictor weights are applied
         - Explanation is preserved from the first producer
         """
         aggregated: dict[str, ScoredSuggestion] = {}
 
-        for predictor in self._predictors:
-            predictions = predictor.predict(ctx)
+        for weighted in self._predictors:
+            results = weighted.predictor.predict(ctx)
 
-            for scored in predictions:
+            for scored in results:
                 key = scored.suggestion.value
+                weighted_score = scored.score * weighted.weight
 
                 if key not in aggregated:
-                    aggregated[key] = scored
+                    aggregated[key] = ScoredSuggestion(
+                        suggestion=scored.suggestion,
+                        score=weighted_score,
+                        explanation=scored.explanation,
+                    )
                 else:
                     prev = aggregated[key]
                     aggregated[key] = ScoredSuggestion(
                         suggestion=prev.suggestion,
-                        score=prev.score + scored.score,
+                        score=prev.score + weighted_score,
                         explanation=prev.explanation,
                     )
 
@@ -102,21 +112,22 @@ class AutocompleteEngine:
         ctx = CompletionContext(text)
         self._history.record(ctx.text, value)
 
-        for predictor in self._predictors:
-            record = getattr(predictor, "record", None)
+        for weighted in self._predictors:
+            record = getattr(weighted.predictor, "record", None)
             if callable(record):
                 record(ctx, value)
 
-
-        @classmethod
-        def from_predictors(
-            cls,
-            predictors: Sequence[Predictor],
-            ranker: Ranker | None = None,
-        ) -> "AutocompleteEngine":
-            weighted = [
-                WeightedPredictor(predictor=p, weight=1.0)
-                for p in predictors
-            ]
-            return cls(weighted, ranker=ranker)
-
+    @classmethod
+    def from_predictors(
+        cls,
+        predictors: Sequence[Predictor],
+        ranker: Ranker | None = None,
+    ) -> AutocompleteEngine:
+        """
+        Backwards-compatible constructor for unweighted predictors.
+        """
+        weighted = [
+            WeightedPredictor(predictor=p, weight=1.0)
+            for p in predictors
+        ]
+        return cls(weighted, ranker=ranker)
