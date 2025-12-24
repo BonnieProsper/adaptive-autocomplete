@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from aac.ranking.explanation import RankingExplanation
@@ -62,3 +62,11 @@ def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
         if isinstance(ctx, str):
             return CompletionContext(ctx)
         return ctx
+
+
+class Predictor(Protocol):
+    name: str
+
+    def predict(self, context: "CompletionContext") -> list["ScoredCompletion"]:
+        ...
+
