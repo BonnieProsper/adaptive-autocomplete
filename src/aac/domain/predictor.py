@@ -1,24 +1,32 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Protocol
 
 from aac.domain.types import CompletionContext, ScoredSuggestion
 
 
 class Predictor(Protocol):
-    """Protocol for predictor implementations used by the engine.
-
-    Implementations should return a list of 'ScoredSuggestion' for a
-    given input text.
     """
+    Structural contract for autocomplete predictors.
+
+    Predictors:
+    - expose a stable, human-readable name
+    - accept a CompletionContext
+    - return scored suggestions
+    """
+
     @property
-    @abstractmethod
     def name(self) -> str:
         """
-        Name of the predictor.
+        Name of the predictor (used for explainability and debugging).
         """
-        raise NotImplementedError
+        ...
 
-    def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
+    def predict(
+        self,
+        ctx: CompletionContext | str,
+    ) -> list[ScoredSuggestion]:
+        """
+        Produce scored suggestions for the given context.
+        """
         ...
