@@ -1,4 +1,4 @@
-from aac.domain.types import CompletionContext, WeightedPredictor
+from aac.domain.types import CompletionContext, ScoredCompletion, WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
 
 
