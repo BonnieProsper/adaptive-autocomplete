@@ -1,5 +1,6 @@
 from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
+from tests.contracts.predictor_contract import PredictorContractTestMixin
 
 
 class DummyPredictor:
@@ -15,6 +16,11 @@ class DummyPredictor:
                 explanation=None,
             )
         ]
+
+
+class TestDummyPredictorContract(PredictorContractTestMixin):
+    def make_predictor(self):
+        return DummyPredictor(name="dummy", score=1.0)
 
 
 def test_weighting_affects_score():
