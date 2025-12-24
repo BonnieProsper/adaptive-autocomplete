@@ -17,13 +17,14 @@ def build_engine() -> AutocompleteEngine:
     """
     history = History()
 
-    return AutocompleteEngine.from_predictors(
+    return AutocompleteEngine(
         predictors=[
             PrefixPredictor(
                 vocabulary=["hello", "help", "helium", "hero"],
             ),
         ],
         ranker=LearningRanker(history),
+        history=history,
     )
 
 
