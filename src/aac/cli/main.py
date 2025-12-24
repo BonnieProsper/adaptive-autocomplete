@@ -10,9 +10,8 @@ from aac.ranking.learning import LearningRanker
 
 def build_engine() -> AutocompleteEngine:
     """
-    Constructs the autocomplete engine.
-
-    Centralized so CLI behavior is deterministic, testable,
+    Builds the autocomplete engine.
+    Centralized so CLI behavior is testable
     and consistent with production usage.
     """
     history = History()
@@ -68,7 +67,7 @@ def handle_suggest(
     explain: bool,
 ) -> None:
     """
-    Handles the `suggest` CLI command.
+    Handles the 'suggest' CLI command.
     """
     suggestions = engine.suggest(prefix)
 
