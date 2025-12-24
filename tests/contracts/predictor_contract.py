@@ -11,7 +11,7 @@ class PredictorContractTestMixin(ABC):
 
     Any predictor (real or dummy) must satisfy these invariants.
     """
- vb
+    
     @abstractmethod
     def make_predictor(self):
         """
