@@ -11,22 +11,14 @@ class Predictor(Protocol):
 
     Predictors:
     - expose a stable, human-readable name
-    - accept a CompletionContext
+    - accept a CompletionContext (or raw string)
     - return scored suggestions
     """
 
-    @property
-    def name(self) -> str:
-        """
-        Name of the predictor (used for explainability and debugging).
-        """
-        ...
+    name: str  #  DATA ATTRIBUTE, not @property
 
     def predict(
         self,
         ctx: CompletionContext | str,
     ) -> list[ScoredSuggestion]:
-        """
-        Produce scored suggestions for the given context.
-        """
         ...
