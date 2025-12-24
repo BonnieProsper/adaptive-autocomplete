@@ -11,14 +11,12 @@ class PrefixPredictor(Predictor):
     """
     Suggests words that start with the current token.
     """
-
+    name = "prefix"
+    
     def __init__(self, vocabulary: Iterable[str]) -> None:
         # preserve order, remove duplicates
         self._vocabulary = tuple(dict.fromkeys(vocabulary))
 
-    @property
-    def name(self) -> str:
-        return "prefix"
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
