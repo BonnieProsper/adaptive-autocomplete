@@ -1,35 +1,30 @@
-from aac.domain.history import History
-from aac.domain.types import CompletionContext
-from aac.predictors.history import HistoryPredictor
+from __future__ import annotations
+
+from typing import Any
+
+from aac.domain.types import ScoredSuggestion, Suggestion
 
 
-def test_history_predictor_returns_seen_values():
-    history = History()
-    history.record("h", "hello")
-    history.record("h", "hello")
-    history.record("h", "help")
+def make_scored(
+    value: str,
+    score: float,
+    explanation: Any | None = None,
+) -> ScoredSuggestion:
+    """
+    Helper for constructing valid ScoredSuggestion objects.
 
-    predictor = HistoryPredictor(history)
+    Enforces predictor invariants:
+    - Non-empty suggestion value
+    - Float score
+    """
+    if not value:
+        raise ValueError("Suggestion value must be non-empty")
 
-    ctx = CompletionContext(text="h")
-    results = predictor.predict(ctx)
+    if not isinstance(score, float):
+        raise TypeError("Score must be a float")
 
-    values = [r.suggestion.value for r in results]
-
-    assert values == ["hello", "help"]
-
-
-def test_history_predictor_scores_reflect_frequency():
-    history = History()
-    history.record("h", "hello")
-    history.record("h", "hello")
-    history.record("h", "help")
-
-    predictor = HistoryPredictor(history)
-
-    ctx = CompletionContext(text="h")
-    results = predictor.predict(ctx)
-
-    scores = {r.suggestion.value: r.score for r in results}
-
-    assert scores["hello"] > scores["help"]
+    return ScoredSuggestion(
+        suggestion=Suggestion(value=value),
+        score=score,
+        explanation=explanation,
+    )
