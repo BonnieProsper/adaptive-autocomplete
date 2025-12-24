@@ -108,14 +108,11 @@ class AutocompleteEngine:
         ctx = CompletionContext(text)
         scored = self._score(ctx)
 
-        ranked = self._ranker.rank(ctx.text, scored)
-
-        explanations: list[RankingExplanation] = []
-        for item in ranked:
-            if item.explanation is not None:
-                explanations.append(item.explanation)
-
-        return explanations
+        return [
+            s.explanation
+            for s in scored
+            if s.explanation is not None
+        ]
 
     def record_selection(self, text: str, value: str) -> None:
         """
