@@ -59,19 +59,26 @@ class PredictionResult:
 
 
 def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
-        if isinstance(ctx, str):
-            return CompletionContext(ctx)
-        return ctx
+    if isinstance(ctx, str):
+        return CompletionContext(ctx)
+    return ctx
 
 
 class Predictor(Protocol):
+    """
+    Contract implemented by all predictors.
+    """
     name: str
 
-    def predict(self, context: "CompletionContext") -> list["ScoredCompletion"]:
+    def predict(self, context: CompletionContext) -> list[ScoredSuggestion]:
         ...
 
 
 @dataclass(frozen=True)
 class WeightedPredictor:
+    """
+    Predictor paired with a weight applied during aggregation.
+    """
     predictor: Predictor
     weight: float = 1.0
+
