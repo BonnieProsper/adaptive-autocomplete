@@ -3,27 +3,36 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import ScoredSuggestion
 from aac.ranking.explanation import RankingExplanation
 
 
 class Ranker(ABC):
     """
-    Produces an ordered list of suggestions from scored candidates.
+    Base contract for all ranking strategies.
+
+    Rankers operate on scored suggestions and must be:
+    - deterministic, stable, non-mutating
     """
 
     @abstractmethod
     def rank(
         self,
-        text: str,
-        scored: Sequence[ScoredSuggestion],
-    ) -> list[Suggestion]:
+        prefix: str,
+        suggestions: Sequence[ScoredSuggestion],
+    ) -> list[ScoredSuggestion]:
+        """
+        Return suggestions ordered by preference.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def explain(
         self,
-        text: str,
-        scored: Sequence[ScoredSuggestion],
+        prefix: str,
+        suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
+        """
+        Return ranking explanations aligned with rank().
+        """
         raise NotImplementedError
