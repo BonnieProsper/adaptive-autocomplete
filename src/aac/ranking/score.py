@@ -24,7 +24,6 @@ class ScoreRanker(Ranker):
             key=lambda s: s.score,
             reverse=True,
         )
-
         return [s.suggestion for s in ordered]
 
     def explain(
@@ -54,10 +53,9 @@ class ScoreRanker(Ranker):
 
 
 def score_and_rank(
-    prefix: str,
     suggestions: Sequence[ScoredSuggestion],
 ) -> list[Suggestion]:
     """
     Pure functional ranking helper used by tests.
     """
-    return ScoreRanker().rank(prefix, suggestions)
+    return ScoreRanker().rank("", suggestions)
