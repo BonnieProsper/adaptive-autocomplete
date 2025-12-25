@@ -19,6 +19,9 @@ class CompletionContext:
     def prefix(self) -> str:
         """
         Returns the token fragment to be completed.
+        Cursor semantics:
+        - cursor_pos is a character boundary
+        - prefix includes characters strictly before the cursor
         """
         if not self.text:
             return ""
@@ -26,7 +29,7 @@ class CompletionContext:
         if self.cursor_pos is None:
             return self.text.split()[-1]
 
-        pos = max(0, self.cursor_pos)
+        pos = max(0, min(self.cursor_pos, len(self.text)))
         parts = self.text[:pos].split()
         return parts[-1] if parts else ""
 
@@ -92,4 +95,3 @@ def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
     if isinstance(ctx, CompletionContext):
         return ctx
     return CompletionContext(text=ctx)
-
