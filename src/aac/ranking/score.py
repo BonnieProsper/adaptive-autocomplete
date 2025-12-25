@@ -1,61 +1,30 @@
-from collections.abc import Sequence
+from __future__ import annotations
 
-from aac.domain.types import ScoredSuggestion, Suggestion
+from typing import Iterable, List
+
+from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
-from aac.ranking.explanation import RankingExplanation
 
 
 class ScoreRanker(Ranker):
-    """
-    Pure score-based ranker.
-    No learning or mutation and stable ordering.
-    """
-
     def rank(
         self,
-        text: str,
-        scored: Sequence[ScoredSuggestion],
-    ) -> list[Suggestion]:
-        if not scored:
-            return []
-
+        prefix: str,
+        suggestions: Iterable[ScoredSuggestion],
+    ) -> List[ScoredSuggestion]:
+        # Defensive copy to preserve idempotence
         ordered = sorted(
-            scored,
+            suggestions,
             key=lambda s: s.score,
             reverse=True,
         )
-        return [s.suggestion for s in ordered]
-
-    def explain(
-        self,
-        text: str,
-        scored: Sequence[ScoredSuggestion],
-    ) -> list[RankingExplanation]:
-        if not scored:
-            return []
-
-        ordered = sorted(
-            scored,
-            key=lambda s: s.score,
-            reverse=True,
-        )
-
-        return [
-            RankingExplanation(
-                value=s.suggestion.value,
-                base_score=s.score,
-                history_boost=0.0,
-                final_score=s.score,
-                source="score",
-            )
-            for s in ordered
-        ]
+        return list(ordered)
 
 
 def score_and_rank(
-    suggestions: Sequence[ScoredSuggestion],
-) -> list[Suggestion]:
+    suggestions: Iterable[ScoredSuggestion],
+) -> List[ScoredSuggestion]:
     """
-    Pure functional ranking helper used by tests.
+    Rank suggestions purely by their existing scores.
     """
     return ScoreRanker().rank("", suggestions)
