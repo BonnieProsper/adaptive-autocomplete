@@ -103,6 +103,13 @@ class AutocompleteEngine:
         """
         return self._score(ctx)
 
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        """
+        Backwards-compatible alias for raw prediction.
+        """
+        return self.complete(ctx)
+
+
     def explain(self, text: str) -> list[RankingExplanation]:
         """
         Public API: returns explainability objects for the current input.
