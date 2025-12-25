@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
-from aac.engine.engine import PredictionEngine
+from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
 from aac.ranking.score import score_and_rank
 
