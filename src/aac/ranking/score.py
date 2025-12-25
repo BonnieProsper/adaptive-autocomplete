@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from aac.domain.types import ScoredSuggestion
+from aac.domain.types import Suggestion, ScoredSuggestion
 from aac.ranking.base import Ranker
+from aac.ranking.explanation import RankingExplanation
 
 
 class ScoreRanker(Ranker):
@@ -18,7 +19,20 @@ class ScoreRanker(Ranker):
             key=lambda s: s.score,
             reverse=True,
         )
-        return list(ordered)
+        return [s.suggestion for s in ordered]
+
+    def explain(
+        self,
+        prefix: str,
+        suggestions: Iterable[ScoredSuggestion],
+    ) -> list[RankingExplanation]:
+        return [
+            RankingExplanation(
+                suggestion=s.suggestion,
+                reasons=[f"score={s.score}"],
+            )
+            for s in suggestions
+        ]
 
 
 def score_and_rank(
