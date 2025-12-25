@@ -18,9 +18,6 @@ class Ranker(ABC):
         text: str,
         scored: Sequence[ScoredSuggestion],
     ) -> list[Suggestion]:
-        """
-        Rank scored suggestions and return suggestions only.
-        """
         raise NotImplementedError
 
     @abstractmethod
@@ -29,7 +26,4 @@ class Ranker(ABC):
         text: str,
         scored: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        """
-        Produce explanations for ranking decisions.
-        """
         raise NotImplementedError
