@@ -1,4 +1,4 @@
-from __future__ import annotations
+from collections.abc import Sequence
 
 from aac.domain.types import ScoredSuggestion, Suggestion
 from aac.ranking.base import Ranker
@@ -7,39 +7,47 @@ from aac.ranking.explanation import RankingExplanation
 
 class ScoreRanker(Ranker):
     """
-    Ranks suggestions by descending score.
+    Pure score-based ranker.
+    No learning or mutation and stable ordering.
     """
 
     def rank(
         self,
         text: str,
-        scored: list[ScoredSuggestion],
+        scored: Sequence[ScoredSuggestion],
     ) -> list[Suggestion]:
-        ordered = sorted(scored, key=lambda s: s.score, reverse=True)
+        if not scored:
+            return []
+
+        ordered = sorted(
+            scored,
+            key=lambda s: s.score,
+            reverse=True,
+        )
+
         return [s.suggestion for s in ordered]
 
     def explain(
         self,
         text: str,
-        scored: list[ScoredSuggestion],
+        scored: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        """
-        ScoreRanker does not apply learning;
-        explanation reflects raw predictor scores.
-        """
-        ordered = sorted(scored, key=lambda s: s.score, reverse=True)
+        if not scored:
+            return []
 
-        explanations: list[RankingExplanation] = []
+        ordered = sorted(
+            scored,
+            key=lambda s: s.score,
+            reverse=True,
+        )
 
-        for s in ordered:
-            explanations.append(
-                RankingExplanation(
-                    value=s.suggestion.value,
-                    base_score=s.score,
-                    history_boost=0.0,
-                    final_score=s.score,
-                    source="score",
-                )
+        return [
+            RankingExplanation(
+                value=s.suggestion.value,
+                base_score=s.score,
+                history_boost=0.0,
+                final_score=s.score,
+                source="score",
             )
-
-        return explanations
+            for s in ordered
+        ]
