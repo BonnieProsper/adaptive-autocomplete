@@ -111,12 +111,6 @@ class AutocompleteEngine:
         scored = self._score(ctx)
         ranked = self._ranker.rank(ctx.text, scored)
 
-        return [
-            s.explanation
-            for s in ranked
-            if s.explanation is not None
-        ]
-
     def record_selection(self, text: str, value: str) -> None:
         """
         Records user feedback and propagates learning.
