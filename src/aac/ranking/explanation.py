@@ -7,10 +7,12 @@ from dataclasses import asdict, dataclass
 class RankingExplanation:
     """
     Explains how a final ranking score was produced for a suggestion.
+
     Invariants:
     - base_score: score produced by predictor
     - history_boost: adjustment from learned signals
     - final_score: base_score + history_boost (+ ranker effects)
+    - source: component that produced the base score
     """
     value: str
     base_score: float
@@ -25,7 +27,7 @@ class RankingExplanation:
         return asdict(self)
 
     @staticmethod
-    def base(*, value: str, score: float, source: str,) -> RankingExplanation:
+    def base(*, value: str, score: float, source: str) -> RankingExplanation:
         """
         Factory for predictor-originated explanations (no learning applied).
         """
@@ -36,4 +38,3 @@ class RankingExplanation:
             final_score=score,
             source=source,
         )
-
