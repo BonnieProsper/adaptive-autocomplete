@@ -71,7 +71,11 @@ class Predictor(Protocol):
     name: str
 
     def predict(self, context: CompletionContext) -> list[ScoredSuggestion]:
-        ...
+        results = self.predictor.predict(ctx)
+
+    for result in results:
+        new_score = result.score * self.weight
+
 
 
 @dataclass(frozen=True)
@@ -81,4 +85,13 @@ class WeightedPredictor:
     """
     predictor: Predictor
     weight: float = 1.0
+
+    def __init__(self, predictor: Predictor, weight: float) -> None:
+        self.predictor = predictor
+        self.weight = weight
+
+    @property
+    def name(self) -> str:
+        return predictor.name
+
 
