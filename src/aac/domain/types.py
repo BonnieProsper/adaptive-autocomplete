@@ -20,16 +20,16 @@ class CompletionContext:
         """
         Return the current word prefix immediately before the cursor.
         """
-        if self.cursor_pos <= 0:
+        cursor = self.cursor_pos if self.cursor_pos is not None else len(self.text)
+
+        if cursor <= 0 or cursor > len(self.text):
             return ""
 
-        i = self.cursor_pos - 1
-        text = self.text
+        start = cursor - 1
+        while start >= 0 and not self.text[start].isspace():
+            start -= 1
 
-        while i >= 0 and text[i].isalnum():
-            i -= 1
-
-        return text[i + 1 : self.cursor_pos]
+        return self.text[start + 1 : cursor]
 
 
 @dataclass(frozen=True)
