@@ -5,3 +5,4 @@ __pycache__/
 .coverage
 *.egg-info/
 .env
+Architecture.md.docx
