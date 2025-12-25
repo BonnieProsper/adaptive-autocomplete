@@ -109,7 +109,7 @@ class AutocompleteEngine:
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        ranked = self._ranker.rank(ctx.text, scored)
+        return self._ranker.rank(ctx.text, scored)
 
     def record_selection(self, text: str, value: str) -> None:
         """
