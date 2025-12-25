@@ -13,7 +13,7 @@ def _scores(results: list[ScoredSuggestion]) -> list[float]:
 
 
 def test_ranking_is_deterministic():
-    engine = PredictionEngine(
+    engine = AutocompleteEngine(
         predictors=[
             PrefixPredictor(vocabulary=["hello", "help", "helium"])
         ]
@@ -75,7 +75,7 @@ def test_ranking_is_idempotent():
 
 
 def test_predictors_do_not_mutate_each_other():
-    engine = PredictionEngine(
+    engine = AutocompleteEngine(
         predictors=[
             PrefixPredictor(vocabulary=["hello", "help"]),
             PrefixPredictor(vocabulary=["helium"]),
