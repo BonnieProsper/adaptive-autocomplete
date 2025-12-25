@@ -32,7 +32,7 @@ class AutocompleteEngine:
         ranker: Ranker | None = None,
         history: History | None = None,
     ) -> None:
-        # Normalize predictors ONCE at the boundary
+        # Normalize predictors once at the boundary
         self._predictors: list[WeightedPredictor] = []
         for p in predictors:
             if isinstance(p, WeightedPredictor):
