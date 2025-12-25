@@ -51,3 +51,13 @@ class ScoreRanker(Ranker):
             )
             for s in ordered
         ]
+
+
+def score_and_rank(
+    prefix: str,
+    suggestions: Sequence[ScoredSuggestion],
+) -> list[Suggestion]:
+    """
+    Pure functional ranking helper used by tests.
+    """
+    return ScoreRanker().rank(prefix, suggestions)
