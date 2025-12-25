@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from aac.ranking.explanation import RankingExplanation
@@ -20,9 +19,13 @@ class CompletionContext:
         """
         Returns the token fragment to be completed.
         """
+        if not self.text:
+            return ""
+
         if self.cursor_pos is None:
-            return self.text.split()[-1] if self.text else ""
-        pos = max(0, self.cursor_pos - 1)
+            return self.text.split()[-1]
+
+        pos = max(0, self.cursor_pos)
         parts = self.text[:pos].split()
         return parts[-1] if parts else ""
 
@@ -49,33 +52,14 @@ class ScoredSuggestion:
         return self.suggestion.value
 
 
-@dataclass(frozen=True)
-class PredictionResult:
-    """
-    Output of a single predictor.
-    """
-    predictor: str
-    suggestions: Sequence[ScoredSuggestion]
-
-
-def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
-    if isinstance(ctx, str):
-        return CompletionContext(ctx)
-    return ctx
-
-
 class Predictor(Protocol):
     """
     Contract implemented by all predictors.
     """
     name: str
 
-    def predict(self, context: CompletionContext) -> list[ScoredSuggestion]:
-        results = self.predictor.predict(ctx)
-
-    for result in results:
-        new_score = result.score * self.weight
-
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        ...
 
 
 @dataclass(frozen=True)
@@ -86,12 +70,16 @@ class WeightedPredictor:
     predictor: Predictor
     weight: float = 1.0
 
-    def __init__(self, predictor: Predictor, weight: float) -> None:
-        self.predictor = predictor
-        self.weight = weight
-
     @property
     def name(self) -> str:
-        return predictor.name
+        return self.predictor.name
 
+
+def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
+    """
+    Normalizes raw text or CompletionContext into CompletionContext.
+    """
+    if isinstance(ctx, CompletionContext):
+        return ctx
+    return CompletionContext(text=ctx)
 
