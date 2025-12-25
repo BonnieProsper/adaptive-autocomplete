@@ -22,7 +22,9 @@ class AutocompleteEngine:
 
     Architectural invariants:
     - Engine owns the CompletionContext lifecycle
-    - Internally, predictors are ALWAYS WeightedPredictor
+    - Internally, predictors are always WeightedPredictor
+    - Predictors emit raw scores
+    - Engine applies weights and merges results
     - History has a single source of truth
     """
 
@@ -59,7 +61,7 @@ class AutocompleteEngine:
         Aggregation invariants:
         - Suggestions with identical values are merged
         - Scores are summed
-        - Predictor weights are applied
+        - Predictor weights are applied here (and nowhere else)
         - Explanation is preserved from the first producer
         """
         aggregated: dict[str, ScoredSuggestion] = {}
@@ -103,14 +105,15 @@ class AutocompleteEngine:
 
     def explain(self, text: str) -> list[RankingExplanation]:
         """
-        Public API: returns explainability objects for the current input.
+        Public API: returns explainability objects in ranked order.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
+        ranked = self._ranker.rank(ctx.text, scored)
 
         return [
             s.explanation
-            for s in scored
+            for s in ranked
             if s.explanation is not None
         ]
 
