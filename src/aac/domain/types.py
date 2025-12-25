@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
@@ -73,6 +74,15 @@ class WeightedPredictor:
     @property
     def name(self) -> str:
         return self.predictor.name
+
+
+@dataclass(frozen=True)
+class PredictionResult:
+    """
+    Output of a single predictor before aggregation.
+    """
+    predictor: str
+    suggestions: Sequence[ScoredSuggestion]
 
 
 def ensure_context(ctx: CompletionContext | str) -> CompletionContext:
