@@ -105,11 +105,13 @@ class AutocompleteEngine:
 
     def explain(self, text: str) -> list[RankingExplanation]:
         """
-        Public API: returns explainability objects in ranked order.
+        Public API: returns explainability objects for the current input.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        return self._ranker.rank(ctx.text, scored)
+
+        return self._ranker.explain(ctx.text, scored)
+
 
     def record_selection(self, text: str, value: str) -> None:
         """
