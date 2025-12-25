@@ -18,20 +18,18 @@ class CompletionContext:
 
     def prefix(self) -> str:
         """
-        Returns the token fragment to be completed.
-        Cursor semantics:
-        - cursor_pos is a character boundary
-        - prefix includes characters strictly before the cursor
+        Return the current word prefix immediately before the cursor.
         """
-        if not self.text:
+        if self.cursor_pos <= 0:
             return ""
 
-        if self.cursor_pos is None:
-            return self.text.split()[-1]
+        i = self.cursor_pos - 1
+        text = self.text
 
-        pos = max(0, min(self.cursor_pos, len(self.text)))
-        parts = self.text[:pos].split()
-        return parts[-1] if parts else ""
+        while i >= 0 and text[i].isalnum():
+            i -= 1
+
+        return text[i + 1 : self.cursor_pos]
 
 
 @dataclass(frozen=True)
