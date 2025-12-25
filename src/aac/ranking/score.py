@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
@@ -11,7 +11,7 @@ class ScoreRanker(Ranker):
         self,
         prefix: str,
         suggestions: Iterable[ScoredSuggestion],
-    ) -> List[ScoredSuggestion]:
+    ) -> list[ScoredSuggestion]:
         # Defensive copy to preserve idempotence
         ordered = sorted(
             suggestions,
@@ -23,7 +23,7 @@ class ScoreRanker(Ranker):
 
 def score_and_rank(
     suggestions: Iterable[ScoredSuggestion],
-) -> List[ScoredSuggestion]:
+) -> list[ScoredSuggestion]:
     """
     Rank suggestions purely by their existing scores.
     """
