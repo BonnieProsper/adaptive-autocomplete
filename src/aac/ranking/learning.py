@@ -26,7 +26,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         self,
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
-    ) -> list[Suggestion]:
+    ) -> list[ScoredSuggestion]:
         if not suggestions:
             return []
 
