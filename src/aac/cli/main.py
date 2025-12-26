@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
 from aac.ranking.learning import LearningRanker
+from aac.storage.json_history import JsonHistory
+
+
+DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 
 
 def build_engine(history: History | None = None) -> AutocompleteEngine:
@@ -15,7 +20,7 @@ def build_engine(history: History | None = None) -> AutocompleteEngine:
     Centralized so CLI behavior is testable,
     repeatable, and consistent with production usage.
     """
-    history = history or History()
+    history = history or JsonHistory(DEFAULT_HISTORY_PATH)
 
     return AutocompleteEngine(
         predictors=[
@@ -29,7 +34,10 @@ def build_engine(history: History | None = None) -> AutocompleteEngine:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="aac")
+    parser = argparse.ArgumentParser(
+        prog="aac",
+        description="Adaptive autocomplete engine with learning and explainability",
+    )
 
     subparsers = parser.add_subparsers(
         dest="command",
@@ -58,8 +66,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    history = History()
-    engine = build_engine(history)
+    engine = build_engine()
 
     if args.command == "suggest":
         handle_suggest(
