@@ -8,6 +8,7 @@ from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
 from aac.ranking.learning import LearningRanker
 from aac.storage.json_history import JsonHistory
+from aac.storage.json_store import JsonHistoryStore
 
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
