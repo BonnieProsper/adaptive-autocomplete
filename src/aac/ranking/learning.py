@@ -33,7 +33,6 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         counts = self.history.counts_for_prefix(prefix)
 
-        # No learning signal = preserve original order exactly
         if not counts:
             return list(suggestions)
 
@@ -41,10 +40,9 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            adjusted_score = s.score + count * self._boost
-            adjusted.append((adjusted_score, s))
+            score = s.score + count * self._boost
+            adjusted.append((score, s))
 
-        # Stable sort by adjusted score
         adjusted.sort(key=lambda t: t[0], reverse=True)
 
         return [s for _, s in adjusted]
@@ -61,14 +59,13 @@ class LearningRanker(Ranker, LearnsFromHistory):
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
             history_boost = count * self._boost
-            final_score = s.score + history_boost
 
             explanations.append(
                 RankingExplanation(
                     value=s.suggestion.value,
                     base_score=s.score,
                     history_boost=history_boost,
-                    final_score=final_score,
+                    final_score=s.score + history_boost,
                     source="learning",
                 )
             )
@@ -78,7 +75,18 @@ class LearningRanker(Ranker, LearnsFromHistory):
     def explain_as_dicts(
         self,
         prefix: str,
-        suggestions: Sequence[ScoredSuggestion],
+        suggestions: list[ScoredSuggestion],
     ) -> list[dict[str, float | str]]:
-        return [e.to_dict() for e in self.explain(prefix, suggestions)]
+        explanations = self.explain(prefix, suggestions)
+
+        # Explicit export schema: no internal metadata
+        return [
+            {
+                "value": e.value,
+                "base_score": e.base_score,
+                "history_boost": e.history_boost,
+                "final_score": e.final_score,
+            }
+            for e in explanations
+        ]
 
