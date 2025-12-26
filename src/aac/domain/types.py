@@ -10,26 +10,29 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class CompletionContext:
-    """
-    Represents the current completion request.
-    """
     text: str
     cursor_pos: int | None = None
 
     def prefix(self) -> str:
         """
-        Return the current word prefix immediately before the cursor.
-        """
-        cursor = self.cursor_pos if self.cursor_pos is not None else len(self.text)
+        Returns the stable prefix fragment immediately before the cursor.
 
-        if cursor <= 0 or cursor > len(self.text):
+        The character directly before the cursor is treated as in-progress
+        input and is excluded from the prefix.
+        """
+        if self.cursor_pos is None:
             return ""
 
-        start = cursor - 1
-        while start >= 0 and not self.text[start].isspace():
-            start -= 1
+        before = self.text[: self.cursor_pos]
+        parts = before.split()
 
-        return self.text[start + 1 : cursor]
+        if not parts:
+            return ""
+
+        token = parts[-1]
+
+        # Drop the in-progress character
+        return token[:-1] if len(token) > 0 else ""
 
 
 @dataclass(frozen=True)
