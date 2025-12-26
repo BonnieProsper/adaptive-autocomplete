@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from aac.domain.history import History
-from aac.domain.types import ScoredSuggestion, Suggestion
+from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
 from aac.ranking.explanation import RankingExplanation
@@ -15,9 +15,10 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
     Invariants:
     - No history signal = original order preserved
-    - Learning is additive and monotonic
+    - Learning is additive & monotonic
     - Does not mutate input suggestions
     """
+
     def __init__(self, history: History, boost: float = 1.0) -> None:
         self.history = history
         self._boost = boost
@@ -32,22 +33,21 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         counts = self.history.counts_for_prefix(prefix)
 
-        # No learning = preserve original order
+        # No learning signal = preserve original order exactly
         if not counts:
-            return [s.suggestion for s in suggestions]
+            return list(suggestions)
 
         adjusted: list[tuple[float, ScoredSuggestion]] = []
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            score = s.score + count * self._boost
-            adjusted.append((score, s))
+            adjusted_score = s.score + count * self._boost
+            adjusted.append((adjusted_score, s))
 
-        # Stable sort
+        # Stable sort by adjusted score
         adjusted.sort(key=lambda t: t[0], reverse=True)
 
-        return [s.suggestion for _, s in adjusted]
-
+        return [s for _, s in adjusted]
 
     def explain(
         self,
@@ -78,19 +78,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
     def explain_as_dicts(
         self,
         prefix: str,
-        suggestions: list[ScoredSuggestion],
+        suggestions: Sequence[ScoredSuggestion],
     ) -> list[dict[str, float | str]]:
-        explanations = self.explain(prefix, suggestions)
-
-        return [
-            {
-                "value": e.value,
-                "base_score": e.base_score,
-                "history_boost": e.history_boost,
-                "final_score": e.final_score,
-            }
-            for e in explanations
-            if e is not None
-        ]
-
+        return [e.to_dict() for e in self.explain(prefix, suggestions)]
 
