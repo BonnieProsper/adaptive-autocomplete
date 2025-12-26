@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import DefaultDict
-from collections import defaultdict
 
 from aac.domain.history import History
 
