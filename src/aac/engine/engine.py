@@ -91,7 +91,7 @@ class AutocompleteEngine:
 
     def suggest(self, text: str) -> list[Suggestion]:
         """
-        Public API: ranked suggestions without scores.
+        Public API: return ranked suggestions without scores for the given input.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
@@ -112,7 +112,7 @@ class AutocompleteEngine:
 
     def explain(self, text: str) -> list[RankingExplanation]:
         """
-        Public API: explain how ranking was produced.
+        Public API: explain how suggestions were ranked.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
@@ -120,7 +120,7 @@ class AutocompleteEngine:
 
     def record_selection(self, text: str, value: str) -> None:
         """
-        Records user feedback and propagates learning.
+        Records user feedback for learning.
         """
         ctx = CompletionContext(text)
         self._history.record(ctx.text, value)
