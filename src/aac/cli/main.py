@@ -8,13 +8,14 @@ from aac.predictors.prefix import PrefixPredictor
 from aac.ranking.learning import LearningRanker
 
 
-def build_engine() -> AutocompleteEngine:
+def build_engine(history: History | None = None) -> AutocompleteEngine:
     """
     Builds the autocomplete engine.
-    Centralized so CLI behavior is testable
-    and consistent with production usage.
+
+    Centralized so CLI behavior is testable,
+    repeatable, and consistent with production usage.
     """
-    history = History()
+    history = history or History()
 
     return AutocompleteEngine(
         predictors=[
@@ -35,57 +36,72 @@ def main() -> None:
         required=True,
     )
 
+    # SUGGEST
     suggest = subparsers.add_parser(
         "suggest",
         help="Generate autocomplete suggestions",
     )
-    suggest.add_argument(
-        "prefix",
-        type=str,
-        help="Input text to complete",
-    )
+    suggest.add_argument("text", type=str)
     suggest.add_argument(
         "--explain",
         action="store_true",
         help="Show ranking explanations",
     )
 
+    # SELECT
+    select = subparsers.add_parser(
+        "select",
+        help="Record a user selection for learning",
+    )
+    select.add_argument("text", type=str)
+    select.add_argument("value", type=str)
+
     args = parser.parse_args()
-    engine = build_engine()
+
+    history = History()
+    engine = build_engine(history)
 
     if args.command == "suggest":
         handle_suggest(
             engine=engine,
-            prefix=args.prefix,
+            text=args.text,
             explain=args.explain,
+        )
+    elif args.command == "select":
+        handle_select(
+            engine=engine,
+            text=args.text,
+            value=args.value,
         )
 
 
 def handle_suggest(
     engine: AutocompleteEngine,
-    prefix: str,
+    text: str,
     explain: bool,
 ) -> None:
-    """
-    Handles the 'suggest' CLI command.
-    """
-    suggestions = engine.suggest(prefix)
+    suggestions = engine.suggest(text)
 
     if not explain:
         for suggestion in suggestions:
             print(suggestion.value)
         return
 
-    explanations = engine.explain(prefix)
+    explanations = engine.explain(text)
 
-    for suggestion, explanation in zip(
-        suggestions,
-        explanations,
-        strict=True,
-    ):
-        print(suggestion.value)
+    for explanation in explanations:
         print(
-            f"  base={explanation.base_score:.2f} "
+            f"{explanation.value:12} "
+            f"base={explanation.base_score:.2f} "
             f"+ history={explanation.history_boost:.2f} "
             f"=> {explanation.final_score:.2f}"
         )
+
+
+def handle_select(
+    engine: AutocompleteEngine,
+    text: str,
+    value: str,
+) -> None:
+    engine.record_selection(text, value)
+    print(f"Recorded selection '{value}' for input '{text}'")
