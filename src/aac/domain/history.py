@@ -44,5 +44,16 @@ class History:
             if entry.value == value
         )
 
+    
+    def snapshot(self) -> dict[str, dict[str, int]]:
+        """
+        Returns a serializable snapshot of history data.
+        """
+        return {
+            text: dict(values)
+            for text, values in self._counts.items()
+        }
+
+
 
 
