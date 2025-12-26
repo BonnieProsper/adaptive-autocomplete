@@ -15,24 +15,26 @@ class CompletionContext:
 
     def prefix(self) -> str:
         """
-        Returns the stable prefix fragment immediately before the cursor.
+        Returns the current completion prefix.
 
-        The character directly before the cursor is treated as in-progress
-        input and is excluded from the prefix.
+        Rules:
+        - If cursor_pos is provided, the character immediately before the
+          cursor is considered in-progress and excluded.
+        - If cursor_pos is None, the full text is treated as committed input.
         """
-        if self.cursor_pos is None:
-            return ""
+        if self.cursor_pos is not None:
+            before = self.text[: self.cursor_pos]
+            parts = before.split()
 
-        before = self.text[: self.cursor_pos]
-        parts = before.split()
+            if not parts:
+                return ""
 
-        if not parts:
-            return ""
+            token = parts[-1]
+            return token[:-1] if token else ""
 
-        token = parts[-1]
-
-        # Drop the in-progress character
-        return token[:-1] if len(token) > 0 else ""
+        # No cursor: use full text
+        parts = self.text.split()
+        return parts[-1] if parts else ""
 
 
 @dataclass(frozen=True)
