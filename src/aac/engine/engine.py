@@ -22,9 +22,9 @@ class AutocompleteEngine:
 
     Architectural invariants:
     - Engine owns the CompletionContext lifecycle
-    - Internally, predictors are always WeightedPredictor
-    - Predictors emit raw scores
-    - Engine applies weights and merges results
+    - Internally everything operates on ScoredSuggestion
+    - Rankers never strip scores
+    - Projection to Suggestion happens only at API boundaries
     - History has a single source of truth
     """
 
@@ -34,7 +34,7 @@ class AutocompleteEngine:
         ranker: Ranker | None = None,
         history: History | None = None,
     ) -> None:
-        # Normalize predictors once at the boundary
+        # Normalize predictors at the boundary
         self._predictors: list[WeightedPredictor] = []
         for p in predictors:
             if isinstance(p, WeightedPredictor):
@@ -46,7 +46,7 @@ class AutocompleteEngine:
 
         self._ranker = ranker or ScoreRanker()
 
-        # SINGLE SOURCE OF TRUTH FOR HISTORY
+        # Single source of truth for history
         if history is not None:
             self._history = history
         elif isinstance(self._ranker, LearnsFromHistory):
@@ -56,12 +56,12 @@ class AutocompleteEngine:
 
     def _score(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Collects and aggregates scored suggestions from all predictors.
+        Collect and aggregate scored suggestions from all predictors.
 
         Aggregation invariants:
         - Suggestions with identical values are merged
         - Scores are summed
-        - Predictor weights are applied here (and nowhere else)
+        - Predictor weights are applied exactly once
         - Explanation is preserved from the first producer
         """
         aggregated: dict[str, ScoredSuggestion] = {}
@@ -91,43 +91,36 @@ class AutocompleteEngine:
 
     def suggest(self, text: str) -> list[Suggestion]:
         """
-        Public API: returns ranked suggestions only (no scores).
+        Public API: ranked suggestions without scores.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        return self._ranker.rank(ctx.text, scored)
+        ranked = self._ranker.rank(ctx.text, scored)
+        return [s.suggestion for s in ranked]
 
     def complete(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Lower-level API used by tests and internal consumers.
+        Lower-level API returning scored suggestions.
         """
         return self._score(ctx)
 
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Backwards-compatible alias for raw prediction.
+        Backwards-compatible API used by invariant tests.
         """
         return self.complete(ctx)
 
-
     def explain(self, text: str) -> list[RankingExplanation]:
         """
-        Public API: returns explainability objects for the current input.
+        Public API: explain how ranking was produced.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-
         return self._ranker.explain(ctx.text, scored)
-
 
     def record_selection(self, text: str, value: str) -> None:
         """
         Records user feedback and propagates learning.
-
-        Learning rules:
-        - History is always updated
-        - Predictors may optionally learn
-        - Rankers that learn from history are updated implicitly
         """
         ctx = CompletionContext(text)
         self._history.record(ctx.text, value)
