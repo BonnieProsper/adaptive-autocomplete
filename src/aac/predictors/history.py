@@ -4,9 +4,9 @@ from aac.domain.history import History
 from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
+    PredictorExplanation,
     ScoredSuggestion,
     Suggestion,
-    PredictorExplanation,
     ensure_context,
 )
 
