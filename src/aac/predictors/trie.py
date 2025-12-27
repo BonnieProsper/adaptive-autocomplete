@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
+    PredictorExplanation
     ScoredSuggestion,
     Suggestion,
     ensure_context,
 )
-from aac.domain.predictor import PredictorExplanation
 
 
 @dataclass
