@@ -5,9 +5,9 @@ from aac.domain.types import (
     CompletionContext,
     ScoredSuggestion,
     Suggestion,
+    PredictorExplanation
     ensure_context,
 )
-from aac.domain.predictor import PredictorExplanation
 
 
 class FrequencyPredictor(Predictor):
