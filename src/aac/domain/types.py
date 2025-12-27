@@ -52,7 +52,7 @@ class ScoredSuggestion:
     """
     suggestion: Suggestion
     score: float
-    explanation: RankingExplanation | None = None
+    explanation: PredictorExplanation
 
     @property
     def value(self) -> str:
@@ -67,6 +67,15 @@ class Predictor(Protocol):
 
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         ...
+
+
+@dataclass(frozen=True)
+class PredictorExplanation:
+    """
+    Explains why a predictor emitted a suggestion.
+    """
+    predictor: str
+    detail: str
 
 
 @dataclass(frozen=True)
