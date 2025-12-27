@@ -23,15 +23,3 @@ class Predictor(Protocol):
     ) -> list[ScoredSuggestion]:
         ...
 
-
-@dataclass(frozen=True)
-class PredictorExplanation:
-    """
-    Explanation produced by a single predictor.
-
-    This represents a raw signal before any ranking,
-    normalization, or aggregation occurs.
-    """
-    value: str
-    score: float
-    source: str
