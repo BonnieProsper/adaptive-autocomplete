@@ -7,7 +7,7 @@ from aac.domain.types import (
     Suggestion,
     ensure_context,
 )
-from aac.ranking.explanation import RankingExplanation
+from aac.domain.predictor import PredictorExplanation
 
 
 class FrequencyPredictor(Predictor):
@@ -36,7 +36,7 @@ class FrequencyPredictor(Predictor):
                     ScoredSuggestion(
                         suggestion=Suggestion(value=word),
                         score=score,
-                        explanation=RankingExplanation.base(
+                        explanation=PredictorExplanation(
                             value=word,
                             score=score,
                             source=self.name,
