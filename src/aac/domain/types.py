@@ -69,11 +69,15 @@ class Predictor(Protocol):
 @dataclass(frozen=True)
 class PredictorExplanation:
     """
-    Explains why a predictor emitted a suggestion.
-    """
-    predictor: str
-    detail: str
+    Explanation produced by a single predictor.
 
+    Represents a raw signal before any ranking,
+    normalization, or aggregation occurs.
+    """
+    value: str
+    score: float
+    source: str
+    
 
 @dataclass(frozen=True)
 class WeightedPredictor:
