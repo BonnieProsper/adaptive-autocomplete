@@ -49,7 +49,7 @@ class ScoredSuggestion:
     """
     suggestion: Suggestion
     score: float
-    explanation: PredictorExplanation
+    explanation: PredictorExplanation | None = None
 
     @property
     def value(self) -> str:
