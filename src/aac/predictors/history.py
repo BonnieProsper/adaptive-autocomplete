@@ -2,40 +2,47 @@ from __future__ import annotations
 
 from aac.domain.history import History
 from aac.domain.predictor import Predictor
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, ensure_context
+from aac.domain.types import (
+    CompletionContext,
+    ScoredSuggestion,
+    Suggestion,
+    ensure_context,
+)
 from aac.ranking.explanation import RankingExplanation
 
 
 class HistoryPredictor(Predictor):
+    """
+    Suggests words based on user selection history.
+    """
     name = "history"
-    
+
     def __init__(self, history: History, weight: float = 1.0) -> None:
         self._history = history
         self._weight = weight
 
-
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
-        ctx = ensure_context(ctx) 
-        text = ctx.text
-        if not text:
+        ctx = ensure_context(ctx)
+        token = ctx.text.rstrip().split()[-1] if ctx.text else ""
+        if not token:
             return []
 
-        counts = self._history.counts_for_prefix(text)
+        counts = self._history.counts_for_prefix(token)
         if not counts:
             return []
 
         results: list[ScoredSuggestion] = []
 
         for value, count in counts.items():
-            score = count * self._weight
+            score = float(count) * self._weight
 
             results.append(
                 ScoredSuggestion(
-                    suggestion=Suggestion(value),
+                    suggestion=Suggestion(value=value),
                     score=score,
                     explanation=RankingExplanation.base(
                         value=value,
-                        score=1.0,
+                        score=score,
                         source=self.name,
                     ),
                 )
