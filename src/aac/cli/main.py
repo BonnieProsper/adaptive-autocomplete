@@ -7,22 +7,22 @@ from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.prefix import PrefixPredictor
 from aac.ranking.learning import LearningRanker
-from aac.storage.json_history import JsonHistory
-
-# from aac.storage.json_store import JsonHistoryStore - #TODO: use JsonHistoryStore or JsonHistory
+from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 
 
-def build_engine(history: History | None = None) -> AutocompleteEngine:
+def build_engine(
+    history: History,
+) -> AutocompleteEngine:
     """
-    Builds the autocomplete engine.
+    Build the autocomplete engine.
 
-    Centralized so CLI behavior is testable,
-    repeatable, and consistent with production usage.
+    Kept pure and explicit so:
+    - it is testable
+    - persistence is handled outside
+    - behavior matches production usage
     """
-    history = history or JsonHistory(DEFAULT_HISTORY_PATH)
-
     return AutocompleteEngine(
         predictors=[
             PrefixPredictor(
@@ -67,7 +67,10 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    engine = build_engine()
+    # PERSISTENCE
+    store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
+    history = store.load()
+    engine = build_engine(history)
 
     if args.command == "suggest":
         handle_suggest(
@@ -75,9 +78,11 @@ def main() -> None:
             text=args.text,
             explain=args.explain,
         )
+
     elif args.command == "select":
         handle_select(
             engine=engine,
+            store=store,
             text=args.text,
             value=args.value,
         )
@@ -108,8 +113,10 @@ def handle_suggest(
 
 def handle_select(
     engine: AutocompleteEngine,
+    store: JsonHistoryStore,
     text: str,
     value: str,
 ) -> None:
     engine.record_selection(text, value)
+    store.save(engine.history)
     print(f"Recorded selection '{value}' for input '{text}'")
