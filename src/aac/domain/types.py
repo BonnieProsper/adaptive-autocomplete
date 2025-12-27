@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
-
-if TYPE_CHECKING:
-    from aac.ranking.explanation import RankingExplanation
+from typing import Protocol
 
 
 @dataclass(frozen=True)
