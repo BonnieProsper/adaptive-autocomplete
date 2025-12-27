@@ -129,3 +129,13 @@ class AutocompleteEngine:
             record = getattr(weighted.predictor, "record", None)
             if callable(record):
                 record(ctx, value)
+
+    @property
+    def history(self) -> History:
+        """
+        Read-only access to the engine's history.
+
+        Exposed for persistence and inspection only.
+        """
+        return self._history
+
