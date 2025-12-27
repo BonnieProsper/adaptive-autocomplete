@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, ensure_context
+from aac.domain.types import (
+    CompletionContext,
+    ScoredSuggestion,
+    Suggestion,
+    ensure_context,
+)
 from aac.ranking.explanation import RankingExplanation
 
 
@@ -16,19 +21,20 @@ class FrequencyPredictor(Predictor):
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
-            
-        text = ctx.text
-        if not text:
+
+        token = ctx.text.rstrip().split()[-1] if ctx.text else ""
+        if not token:
             return []
 
         results: list[ScoredSuggestion] = []
 
         for word, count in self._freq.items():
-            if word.startswith(text):
+            if word.startswith(token):
                 score = float(count)
+
                 results.append(
                     ScoredSuggestion(
-                        suggestion=Suggestion(word),
+                        suggestion=Suggestion(value=word),
                         score=score,
                         explanation=RankingExplanation.base(
                             value=word,
