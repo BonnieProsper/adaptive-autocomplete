@@ -34,10 +34,6 @@ class Trie:
         node.value = word
 
     def find_prefix(self, prefix: str, *, limit: int) -> list[str]:
-        """
-        Return up to `limit` words that start with the given prefix.
-        Deterministic order guaranteed.
-        """
         node = self._root
         for ch in prefix:
             if ch not in node.children:
@@ -57,7 +53,6 @@ class Trie:
             if len(out) >= limit:
                 return
 
-        # Deterministic traversal
         for key in sorted(node.children):
             self._collect(node.children[key], out, limit)
             if len(out) >= limit:
@@ -66,28 +61,19 @@ class Trie:
 
 class TriePrefixPredictor(Predictor):
     name = "trie_prefix"
-    
-    def __init__(
-        self,
-        words: Iterable[str],
-        *,
-        max_results: int = 10,
-    ) -> None:
+
+    def __init__(self, words: Iterable[str], *, max_results: int = 10) -> None:
         self._trie = Trie(words)
         self._max_results = max_results
 
-
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
-        text = ctx.text
-
-        if not text:
+        token = ctx.text.rstrip().split()[-1] if ctx.text else ""
+        if not token:
             return []
 
-        prefix = text.rstrip().split()[-1]
-
         matches = self._trie.find_prefix(
-            prefix,
+            token,
             limit=self._max_results,
         )
 
