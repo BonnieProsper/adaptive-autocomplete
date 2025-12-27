@@ -5,11 +5,11 @@ from collections.abc import Iterable
 from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
+    PredictorExplanation,
     ScoredSuggestion,
     Suggestion,
     ensure_context,
 )
-from aac.ranking.explanation import RankingExplanation
 
 
 class PrefixPredictor(Predictor):
@@ -18,7 +18,7 @@ class PrefixPredictor(Predictor):
 
     Predictor contract:
     - Emits deterministic base scores (1.0 per match)
-    - doesn't do normalization or weighting
+    - Does not apply normalization or weighting
     - Ordering follows vocabulary order
     """
 
@@ -43,10 +43,9 @@ class PrefixPredictor(Predictor):
                     ScoredSuggestion(
                         suggestion=Suggestion(value=word),
                         score=1.0,
-                        explanation=RankingExplanation.base(
-                            value=word,
-                            score=1.0,
-                            source=self.name,
+                        explanation=PredictorExplanation(
+                            predictor=self.name,
+                            detail=f"starts with '{token}'",
                         ),
                     )
                 )
