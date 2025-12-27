@@ -44,8 +44,9 @@ class PrefixPredictor(Predictor):
                         suggestion=Suggestion(value=word),
                         score=1.0,
                         explanation=PredictorExplanation(
-                            predictor=self.name,
-                            detail=f"starts with '{token}'",
+                            value=word,
+                            score=1.0
+                            source=self.name
                         ),
                     )
                 )
