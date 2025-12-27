@@ -6,7 +6,7 @@ from aac.domain.types import (
     CompletionContext,
     ScoredSuggestion,
     Suggestion,
-    PredictorExplanation
+    PredictorExplanation,
     ensure_context,
 )
 
