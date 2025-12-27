@@ -10,7 +10,7 @@ from aac.domain.types import (
     Suggestion,
     ensure_context,
 )
-from aac.ranking.explanation import RankingExplanation
+from aac.domain.predictor import PredictorExplanation
 
 
 @dataclass
@@ -72,16 +72,13 @@ class TriePrefixPredictor(Predictor):
         if not token:
             return []
 
-        matches = self._trie.find_prefix(
-            token,
-            limit=self._max_results,
-        )
+        matches = self._trie.find_prefix(token, limit=self._max_results)
 
         return [
             ScoredSuggestion(
                 suggestion=Suggestion(value=word),
                 score=1.0,
-                explanation=RankingExplanation.base(
+                explanation=PredictorExplanation(
                     value=word,
                     score=1.0,
                     source=self.name,
