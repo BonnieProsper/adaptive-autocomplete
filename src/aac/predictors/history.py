@@ -8,7 +8,7 @@ from aac.domain.types import (
     Suggestion,
     ensure_context,
 )
-from aac.ranking.explanation import RankingExplanation
+from aac.domain.predictor import PredictorExplanation
 
 
 class HistoryPredictor(Predictor):
@@ -40,7 +40,7 @@ class HistoryPredictor(Predictor):
                 ScoredSuggestion(
                     suggestion=Suggestion(value=value),
                     score=score,
-                    explanation=RankingExplanation.base(
+                    explanation=PredictorExplanation(
                         value=value,
                         score=score,
                         source=self.name,
