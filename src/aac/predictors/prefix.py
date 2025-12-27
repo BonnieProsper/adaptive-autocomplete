@@ -45,7 +45,7 @@ class PrefixPredictor(Predictor):
                         score=1.0,
                         explanation=PredictorExplanation(
                             value=word,
-                            score=1.0
+                            score=1.0,
                             source=self.name,
                         ),
                     )
