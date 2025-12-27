@@ -9,27 +9,43 @@ from aac.storage.base import HistoryStore
 
 class JsonHistoryStore(HistoryStore):
     """
-    Stores History as JSON on disk.
+    JSON-backed persistence for History.
+
+    - Loads History at startup
+    - Saves explicit snapshots on demand
+    - Keeps domain logic free of I/O
     """
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         self._path = path
 
     def load(self) -> History:
-        if not self._path.exists():
-            return History()
+        """
+        Load history from disk.
 
-        data = json.loads(self._path.read_text())
+        Returns an empty History if no file exists.
+        """
         history = History()
 
-        for text, values in data.items():
+        if not self._path.exists():
+            return history
+
+        data = json.loads(self._path.read_text())
+
+        for prefix, values in data.items():
             for value, count in values.items():
-                history.increment(text, value, count)
+                for _ in range(count):
+                    history.record(prefix, value)
 
         return history
 
     def save(self, history: History) -> None:
+        """
+        Persist history snapshot to disk.
+        """
         self._path.parent.mkdir(parents=True, exist_ok=True)
+
         self._path.write_text(
             json.dumps(history.snapshot(), indent=2, sort_keys=True)
         )
+
