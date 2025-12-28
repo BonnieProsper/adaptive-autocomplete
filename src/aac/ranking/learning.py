@@ -20,7 +20,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
     """
 
     def __init__(self, history: History, boost: float = 1.0) -> None:
-        self.history = history  # PUBLIC, writeable attribute
+        self.history = history
         self._boost = boost
 
     def rank(
@@ -71,3 +71,25 @@ class LearningRanker(Ranker, LearnsFromHistory):
             )
 
         return explanations
+
+    def explain_as_dicts(
+        self,
+        prefix: str,
+        suggestions: Sequence[ScoredSuggestion],
+    ) -> list[dict[str, float | str]]:
+        """
+        Export ranking explanations in a JSON-safe structure.
+
+        This is the serialization boundary — callers should not
+        depend on RankingExplanation internals.
+        """
+        return [
+            {
+                "value": e.value,
+                "base_score": e.base_score,
+                "history_boost": e.history_boost,
+                "final_score": e.final_score,
+                "source": e.source,
+            }
+            for e in self.explain(prefix, suggestions)
+        ]
