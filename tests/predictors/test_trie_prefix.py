@@ -31,5 +31,6 @@ def test_trie_prefix_explanation_source() -> None:
     result = predictor.predict(ctx)[0]
 
     explanation = result.explanation
+    assert explanation is not None
     assert explanation.source == "trie_prefix"
-    assert explanation.base_score == 1.0
+    assert explanation.score == 1.0
