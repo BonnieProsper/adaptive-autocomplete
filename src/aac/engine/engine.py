@@ -54,6 +54,8 @@ class AutocompleteEngine:
         else:
             self._history = History()
 
+    # Predictors are the sole producers of ScoredSuggestion.
+    # engine aggregates, weights, and merges them.
     def _score(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
         Collect and aggregate scored suggestions from all predictors.
