@@ -78,10 +78,11 @@ class LearningRanker(Ranker, LearnsFromHistory):
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[dict[str, float | str]]:
         """
-        Export ranking explanations in a JSON-safe structure.
+        Export ranking explanations in a JSON-safe, stable schema.
 
-        This is the serialization boundary — callers should not
-        depend on RankingExplanation internals.
+        NOTE:
+        - Intentionally excludes internal metadata (e.g source)
+        - This is a public-facing contract
         """
         return [
             {
@@ -89,7 +90,6 @@ class LearningRanker(Ranker, LearnsFromHistory):
                 "base_score": e.base_score,
                 "history_boost": e.history_boost,
                 "final_score": e.final_score,
-                "source": e.source,
             }
             for e in self.explain(prefix, suggestions)
         ]
