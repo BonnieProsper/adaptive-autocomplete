@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, asdict
 
 
 @dataclass(frozen=True)
@@ -42,17 +42,20 @@ class RankingExplanation:
         """
         return asdict(self)
 
-
     def merge(self, other: "RankingExplanation") -> None:
+        """
+        Safely merge another explanation into this one.
+        Only the scores are summed; the source remains unchanged.
+        """
         if self.value != other.value:
             raise ValueError("Cannot merge explanations for different values")
 
-        self.base_score += other.base_score
-        self.history_boost += other.history_boost
-        self.final_score += other.final_score
+        object.__setattr__(self, "base_score", self.base_score + other.base_score)
+        object.__setattr__(
+            self, "history_boost", self.history_boost + other.history_boost
+        )
+        object.__setattr__(self, "final_score", self.final_score + other.final_score)
 
-    
-    # Factories
     @staticmethod
     def from_predictor(
         *,
@@ -71,8 +74,6 @@ class RankingExplanation:
             source=source,
         )
 
-
-    # Transformations
     def apply_history_boost(self, boost: float) -> RankingExplanation:
         """
         Return a new explanation with a learning-based adjustment applied.
