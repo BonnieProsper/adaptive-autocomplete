@@ -55,7 +55,7 @@ class AutocompleteEngine:
             self._history = History()
 
     # Predictors are the sole producers of ScoredSuggestion.
-    # engine aggregates, weights, and merges them.
+    # Engine aggregates, weights, and merges them.
     def _score(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
         Collect and aggregate scored suggestions from all predictors.
@@ -115,10 +115,33 @@ class AutocompleteEngine:
     def explain(self, text: str) -> list[RankingExplanation]:
         """
         Public API: explain how suggestions were ranked.
+        Aggregates explanations across rankers.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        return self._ranker.explain(ctx.text, scored)
+        explanations: dict[str, RankingExplanation] = {}
+
+        for exp in self._ranker.explain(ctx.text, scored):
+            if exp.value not in explanations:
+                explanations[exp.value] = exp
+            else:
+                explanations[exp.value].merge(exp)
+
+        return list(explanations.values())
+
+    def explain_as_dicts(self, text: str) -> list[dict[str, float | str]]:
+        """
+        JSON-serializable explanation export for API consumers.
+        """
+        return [
+            {
+                "value": e.value,
+                "base_score": e.base_score,
+                "history_boost": e.history_boost,
+                "final_score": e.final_score,
+            }
+            for e in self.explain(text)
+        ]
 
     def record_selection(self, text: str, value: str) -> None:
         """
@@ -136,8 +159,5 @@ class AutocompleteEngine:
     def history(self) -> History:
         """
         Read-only access to the engine's history.
-
-        Exposed for persistence and inspection only.
         """
         return self._history
-
