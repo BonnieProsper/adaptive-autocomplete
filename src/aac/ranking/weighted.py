@@ -23,7 +23,7 @@ class WeightedRanker(Ranker):
         ranked = self.ranker.rank(prefix, suggestions)
         if self.weight != 1.0:
             for s in ranked:
-                s.score *= self.weight
+                s.score *= self.weight # TOFIX
         return ranked
 
     def explain(
