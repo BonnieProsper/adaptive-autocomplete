@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class RankingExplanation:
         """
         return asdict(self)
 
-    def merge(self, other: "RankingExplanation") -> None:
+    def merge(self, other: RankingExplanation) -> None:
         """
         Safely merge another explanation into this one.
         Only the scores are summed; the source remains unchanged.
