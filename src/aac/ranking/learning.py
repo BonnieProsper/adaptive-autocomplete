@@ -13,15 +13,23 @@ class LearningRanker(Ranker, LearnsFromHistory):
     """
     Ranker that adapts suggestion ordering based on user selection history.
 
-    Invariants:
-    - No history signal = original order preserved
-    - Learning is additive & monotonic
+    Design principles:
+    - Learning is additive and monotonic
+    - No history signal => original order preserved
+    - Ranking and explanation are derived from the same signal
     - Does not mutate input suggestions
     """
 
     def __init__(self, history: History, boost: float = 1.0) -> None:
-        self.history = history
+        self._history = history
         self._boost = boost
+
+    def _history_boost(self, prefix: str, value: str) -> float:
+        """
+        Compute the learning-based boost for a suggestion value.
+        """
+        counts = self._history.counts_for_prefix(prefix)
+        return counts.get(value, 0) * self._boost
 
     def rank(
         self,
@@ -31,55 +39,51 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if not suggestions:
             return []
 
-        counts = self.history.counts_for_prefix(prefix)
-
+        # Fast path: no history => preserve order
+        counts = self._history.counts_for_prefix(prefix)
         if not counts:
             return list(suggestions)
 
-        adjusted: list[tuple[float, ScoredSuggestion]] = []
+        scored: list[tuple[float, ScoredSuggestion]] = []
 
         for s in suggestions:
-            count = counts.get(s.suggestion.value, 0)
-            score = s.score + count * self._boost
-            adjusted.append((score, s))
+            boost = counts.get(s.suggestion.value, 0) * self._boost
+            scored.append((s.score + boost, s))
 
-        adjusted.sort(key=lambda t: t[0], reverse=True)
-
-        return [s for _, s in adjusted]
+        scored.sort(key=lambda t: t[0], reverse=True)
+        return [s for _, s in scored]
 
     def explain(
         self,
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        counts = self.history.counts_for_prefix(prefix)
-
+        """
+        Produce ranking explanations consistent with learning adjustments.
+        """
         explanations: list[RankingExplanation] = []
 
         for s in suggestions:
-            count = counts.get(s.suggestion.value, 0)
-            history_boost = count * self._boost
+            boost = self._history_boost(prefix, s.suggestion.value)
 
-            explanations.append(
-                RankingExplanation(
-                    value=s.suggestion.value,
-                    base_score=s.score,
-                    history_boost=history_boost,
-                    final_score=s.score + history_boost,
-                    source="learning",
-                )
+            base = RankingExplanation.from_predictor(
+                value=s.suggestion.value,
+                score=s.score,
+                source="predictor",
             )
+
+            explanations.append(base.apply_history_boost(boost))
 
         return explanations
 
     def explain_as_dicts(
         self,
         prefix: str,
-        suggestions: list[ScoredSuggestion],
+        suggestions: Sequence[ScoredSuggestion],
     ) -> list[dict[str, float | str]]:
-        explanations = self.explain(prefix, suggestions)
-
-        # Explicit export schema: no internal metadata
+        """
+        Export explanations using an explicit public schema.
+        """
         return [
             {
                 "value": e.value,
@@ -87,6 +91,5 @@ class LearningRanker(Ranker, LearnsFromHistory):
                 "history_boost": e.history_boost,
                 "final_score": e.final_score,
             }
-            for e in explanations
+            for e in self.explain(prefix, suggestions)
         ]
-
