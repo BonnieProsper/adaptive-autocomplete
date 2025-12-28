@@ -8,17 +8,33 @@ class RankingExplanation:
     """
     Explains how a final ranking score was produced for a suggestion.
 
+    Scoring lifecycle:
+    1. Predictor produces a base score
+    2. Learning/ranking layers apply adjustments
+    3. Final score is derived deterministically
+
     Invariants:
-    - base_score: score produced by predictor
-    - history_boost: adjustment from learned signals
-    - final_score: base_score + history_boost (+ ranker effects)
-    - source: component that produced the base score
+    - final_score == base_score + history_boost
+    - source identifies the originating predictor
     """
+
     value: str
     base_score: float
     history_boost: float
     final_score: float
     source: str
+
+    def __post_init__(self) -> None:
+        """
+        Enforce internal consistency.
+        """
+        expected = self.base_score + self.history_boost
+        if abs(self.final_score - expected) > 1e-9:
+            raise ValueError(
+                "Invalid RankingExplanation: "
+                f"final_score ({self.final_score}) "
+                f"!= base_score + history_boost ({expected})"
+            )
 
     def to_dict(self) -> dict[str, float | str]:
         """
@@ -26,10 +42,17 @@ class RankingExplanation:
         """
         return asdict(self)
 
+    
+    # Factories
     @staticmethod
-    def base(*, value: str, score: float, source: str) -> RankingExplanation:
+    def from_predictor(
+        *,
+        value: str,
+        score: float,
+        source: str,
+    ) -> RankingExplanation:
         """
-        Factory for predictor-originated explanations (no learning applied).
+        Create an explanation directly from a predictor output.
         """
         return RankingExplanation(
             value=value,
@@ -37,4 +60,18 @@ class RankingExplanation:
             history_boost=0.0,
             final_score=score,
             source=source,
+        )
+
+
+    # Transformations
+    def apply_history_boost(self, boost: float) -> RankingExplanation:
+        """
+        Return a new explanation with a learning-based adjustment applied.
+        """
+        return RankingExplanation(
+            value=self.value,
+            base_score=self.base_score,
+            history_boost=self.history_boost + boost,
+            final_score=self.base_score + self.history_boost + boost,
+            source=self.source,
         )
