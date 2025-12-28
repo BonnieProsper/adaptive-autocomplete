@@ -42,6 +42,15 @@ class RankingExplanation:
         """
         return asdict(self)
 
+
+    def merge(self, other: "RankingExplanation") -> None:
+        if self.value != other.value:
+            raise ValueError("Cannot merge explanations for different values")
+
+        self.base_score += other.base_score
+        self.history_boost += other.history_boost
+        self.final_score += other.final_score
+
     
     # Factories
     @staticmethod
