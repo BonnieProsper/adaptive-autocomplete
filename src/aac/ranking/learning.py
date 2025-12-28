@@ -20,17 +20,8 @@ class LearningRanker(Ranker, LearnsFromHistory):
     """
 
     def __init__(self, history: History, boost: float = 1.0) -> None:
-        self._history = history
+        self.history = history  # PUBLIC, writeable attribute
         self._boost = boost
-
-    @property
-    def history(self) -> History:
-        """
-        History source used for learning.
-
-        Exposed read-only to satisfy LearnsFromHistory.
-        """
-        return self._history
 
     def rank(
         self,
@@ -40,7 +31,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if not suggestions:
             return []
 
-        counts = self._history.counts_for_prefix(prefix)
+        counts = self.history.counts_for_prefix(prefix)
 
         if not counts:
             return list(suggestions)
@@ -61,7 +52,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        counts = self._history.counts_for_prefix(prefix)
+        counts = self.history.counts_for_prefix(prefix)
 
         explanations: list[RankingExplanation] = []
 
