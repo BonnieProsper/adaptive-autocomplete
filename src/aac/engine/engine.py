@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Union
 
 from aac.domain.history import History
 from aac.domain.predictor import Predictor
@@ -31,7 +30,7 @@ class AutocompleteEngine:
 
     def __init__(
         self,
-        predictors: Sequence[Union[Predictor, WeightedPredictor]],
+        predictors: Sequence[Predictor | WeightedPredictor],
         ranker: Ranker | Sequence[Ranker] | None = None,
         history: History | None = None,
     ) -> None:

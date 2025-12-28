@@ -1,9 +1,12 @@
 # aac/ranking/weighted.py
 from __future__ import annotations
+
 from collections.abc import Sequence
-from aac.ranking.base import Ranker
+
 from aac.domain.types import ScoredSuggestion
+from aac.ranking.base import Ranker
 from aac.ranking.explanation import RankingExplanation
+
 
 class WeightedRanker(Ranker):
     """
