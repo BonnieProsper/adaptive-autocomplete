@@ -9,9 +9,9 @@ class RankingExplanation:
     Explains how a final ranking score was produced for a suggestion.
 
     Scoring lifecycle:
-    1. Predictor produces a base score
-    2. Learning/ranking layers apply adjustments
-    3. Final score is derived deterministically
+    - Predictor produces a base score
+    - Learning/ranking layers apply adjustments
+    - Final score is derived deterministically
 
     Invariants:
     - final_score == base_score + history_boost
