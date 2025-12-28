@@ -50,6 +50,7 @@ class ScoredSuggestion:
     suggestion: Suggestion
     score: float
     explanation: PredictorExplanation | None = None
+    trace: list[str] = field(default_factory=list)
 
     @property
     def value(self) -> str:
