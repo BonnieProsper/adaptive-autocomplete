@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Union
 
 from aac.domain.history import History
 from aac.domain.predictor import Predictor
@@ -30,8 +31,8 @@ class AutocompleteEngine:
 
     def __init__(
         self,
-        predictors: Sequence[Predictor | WeightedPredictor],
-        ranker: Ranker | None = None,
+        predictors: Sequence[Union[Predictor, WeightedPredictor]],
+        ranker: Ranker | Sequence[Ranker] | None = None,
         history: History | None = None,
     ) -> None:
         # Normalize predictors at the boundary
@@ -44,13 +45,22 @@ class AutocompleteEngine:
                     WeightedPredictor(predictor=p, weight=1.0)
                 )
 
-        self._ranker = ranker or ScoreRanker()
+        # Normalize rankers to a list
+        if ranker is None:
+            self._rankers: list[Ranker] = [ScoreRanker()]
+        elif isinstance(ranker, Ranker):
+            self._rankers = [ranker]
+        else:
+            self._rankers = list(ranker)
 
         # Single source of truth for history
         if history is not None:
             self._history = history
-        elif isinstance(self._ranker, LearnsFromHistory):
-            self._history = self._ranker.history
+        elif any(isinstance(r, LearnsFromHistory) for r in self._rankers):
+            for r in self._rankers:
+                if isinstance(r, LearnsFromHistory):
+                    self._history = r.history
+                    break
         else:
             self._history = History()
 
@@ -65,6 +75,7 @@ class AutocompleteEngine:
         - Scores are summed
         - Predictor weights are applied exactly once
         - Explanation is preserved from the first producer
+        - Trace logs all contributions for debugging
         """
         aggregated: dict[str, ScoredSuggestion] = {}
 
@@ -74,12 +85,14 @@ class AutocompleteEngine:
             for scored in results:
                 key = scored.suggestion.value
                 weighted_score = scored.score * weighted.weight
+                trace_entry = f"Predictor={weighted.predictor.__class__.__name__}, weight={weighted.weight}, raw_score={scored.score}"
 
                 if key not in aggregated:
                     aggregated[key] = ScoredSuggestion(
                         suggestion=scored.suggestion,
                         score=weighted_score,
                         explanation=scored.explanation,
+                        trace=[trace_entry],
                     )
                 else:
                     prev = aggregated[key]
@@ -87,6 +100,7 @@ class AutocompleteEngine:
                         suggestion=prev.suggestion,
                         score=prev.score + weighted_score,
                         explanation=prev.explanation,
+                        trace=prev.trace + [trace_entry],
                     )
 
         return list(aggregated.values())
@@ -97,8 +111,9 @@ class AutocompleteEngine:
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        ranked = self._ranker.rank(ctx.text, scored)
-        return [s.suggestion for s in ranked]
+        for ranker in self._rankers:
+            scored = ranker.rank(ctx.text, scored)
+        return [s.suggestion for s in scored]
 
     def complete(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
@@ -115,19 +130,20 @@ class AutocompleteEngine:
     def explain(self, text: str) -> list[RankingExplanation]:
         """
         Public API: explain how suggestions were ranked.
-        Aggregates explanations across rankers.
+        Aggregates explanations across all rankers.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        explanations: dict[str, RankingExplanation] = {}
+        aggregated: dict[str, RankingExplanation] = {}
 
-        for exp in self._ranker.explain(ctx.text, scored):
-            if exp.value not in explanations:
-                explanations[exp.value] = exp
-            else:
-                explanations[exp.value].merge(exp)
+        for ranker in self._rankers:
+            for exp in ranker.explain(ctx.text, scored):
+                if exp.value not in aggregated:
+                    aggregated[exp.value] = exp
+                else:
+                    aggregated[exp.value].merge(exp)
 
-        return list(explanations.values())
+        return list(aggregated.values())
 
     def explain_as_dicts(self, text: str) -> list[dict[str, float | str]]:
         """
@@ -154,6 +170,27 @@ class AutocompleteEngine:
             record = getattr(weighted.predictor, "record", None)
             if callable(record):
                 record(ctx, value)
+
+    def debug_pipeline(self, text: str) -> None:
+        """
+        Prints full prediction, ranking, and learning pipeline for debugging.
+        """
+        ctx = CompletionContext(text)
+        scored = self._score(ctx)
+
+        print("=== PREDICTION PHASE ===")
+        for s in scored:
+            print(f"{s.suggestion.value}: score={s.score:.2f}, trace={s.trace}")
+
+        print("\n=== RANKING PHASE ===")
+        for ranker in self._rankers:
+            explanations = ranker.explain(ctx.text, scored)
+            for e in explanations:
+                print(
+                    f"{e.value}: base={e.base_score:.2f}, "
+                    f"history={e.history_boost:.2f}, final={e.final_score:.2f}, "
+                    f"source={e.source}"
+                )
 
     @property
     def history(self) -> History:
