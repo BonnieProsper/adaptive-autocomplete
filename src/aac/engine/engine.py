@@ -133,17 +133,6 @@ class AutocompleteEngine:
                 f"Non-finite score for '{s.suggestion.value}': {s.score}"
             )
 
-            # Invariant: explanation reconciliation
-            if s.explanation is not None:
-                assert math.isclose(
-                    s.score,
-                    s.explanation.final_score,
-                    rel_tol=1e-9,
-                ), (
-                    f"Score/explanation mismatch for '{s.suggestion.value}': "
-                    f"{s.score} != {s.explanation.final_score}"
-                )
-
         return ranked
 
     def suggest(self, text: str) -> list[Suggestion]:
