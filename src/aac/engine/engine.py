@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -23,7 +24,9 @@ class AutocompleteEngine:
     Architectural invariants:
     - Engine owns the CompletionContext lifecycle
     - Internally everything operates on ScoredSuggestion
-    - Rankers never strip scores
+    - Rankers must not add/remove suggestions
+    - Scores must remain finite
+    - Explanation final scores must reconcile with suggestion scores
     - Projection to Suggestion happens only at API boundaries
     - History has a single source of truth
     """
@@ -84,7 +87,10 @@ class AutocompleteEngine:
             for scored in results:
                 key = scored.suggestion.value
                 weighted_score = scored.score * weighted.weight
-                trace_entry = f"Predictor={weighted.predictor.__class__.__name__}, weight={weighted.weight}, raw_score={scored.score}"
+                trace_entry = (
+                    f"Predictor={weighted.predictor.__class__.__name__}, "
+                    f"weight={weighted.weight}, raw_score={scored.score}"
+                )
 
                 if key not in aggregated:
                     aggregated[key] = ScoredSuggestion(
@@ -104,19 +110,54 @@ class AutocompleteEngine:
 
         return list(aggregated.values())
 
+    def _apply_ranking(
+        self, ctx: CompletionContext, scored: list[ScoredSuggestion]
+    ) -> list[ScoredSuggestion]:
+        """
+        Apply all rankers with enforced architectural invariants.
+        """
+        ranked = scored
+        original_ids = {id(s) for s in ranked}
+
+        for ranker in self._rankers:
+            ranked = ranker.rank(ctx.text, ranked)
+
+            # Invariant: rankers must not add/remove suggestions
+            assert {id(s) for s in ranked} == original_ids, (
+                f"Ranker {ranker.__class__.__name__} modified suggestion set"
+            )
+
+        # Invariant: scores must be finite
+        for s in ranked:
+            assert math.isfinite(s.score), (
+                f"Non-finite score for '{s.suggestion.value}': {s.score}"
+            )
+
+            # Invariant: explanation reconciliation
+            if s.explanation is not None:
+                assert math.isclose(
+                    s.score,
+                    s.explanation.final_score,
+                    rel_tol=1e-9,
+                ), (
+                    f"Score/explanation mismatch for '{s.suggestion.value}': "
+                    f"{s.score} != {s.explanation.final_score}"
+                )
+
+        return ranked
+
     def suggest(self, text: str) -> list[Suggestion]:
         """
         Public API: return ranked suggestions without scores for the given input.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
-        for ranker in self._rankers:
-            scored = ranker.rank(ctx.text, scored)
-        return [s.suggestion for s in scored]
+        ranked = self._apply_ranking(ctx, scored)
+        return [s.suggestion for s in ranked]
 
     def complete(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Lower-level API returning scored suggestions.
+        Lower-level API returning scored suggestions (no ranking).
         """
         return self._score(ctx)
 
@@ -133,10 +174,12 @@ class AutocompleteEngine:
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
+        ranked = self._apply_ranking(ctx, scored)
+
         aggregated: dict[str, RankingExplanation] = {}
 
         for ranker in self._rankers:
-            for exp in ranker.explain(ctx.text, scored):
+            for exp in ranker.explain(ctx.text, ranked):
                 if exp.value not in aggregated:
                     aggregated[exp.value] = exp
                 else:
@@ -176,14 +219,17 @@ class AutocompleteEngine:
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
+        ranked = self._apply_ranking(ctx, scored)
 
         print("=== PREDICTION PHASE ===")
         for s in scored:
-            print(f"{s.suggestion.value}: score={s.score:.2f}, trace={s.trace}")
+            print(
+                f"{s.suggestion.value}: score={s.score:.2f}, trace={s.trace}"
+            )
 
         print("\n=== RANKING PHASE ===")
         for ranker in self._rankers:
-            explanations = ranker.explain(ctx.text, scored)
+            explanations = ranker.explain(ctx.text, ranked)
             for e in explanations:
                 print(
                     f"{e.value}: base={e.base_score:.2f}, "
