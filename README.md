@@ -37,10 +37,9 @@ and allows explanations to remain truthful as the system evolves.
 
 Immutability at Boundaries:
 
-Core domain objects (Suggestion, ScoredSuggestion, CompletionContext)
+- Core domain objects (Suggestion, ScoredSuggestion, CompletionContext)
 are immutable.
-
-Rankers return new ordering, not mutated input, ensuring determinism
+- Rankers return new ordering, not mutated input, ensuring determinism
 and safe composition.
 
 ## Component Responsibilities
