@@ -1,10 +1,10 @@
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.frequency import FrequencyPredictor
-from aac.predictors.prefix import PrefixPredictor
+from aac.predictors.static_prefix import StaticPrefixPredictor
 
 
 def test_engine_combines_multiple_predictors() -> None:
-    prefix = PrefixPredictor(
+    prefix = StaticPrefixPredictor(
         vocabulary=["hello", "help", "helium", "world"]
     )
 
