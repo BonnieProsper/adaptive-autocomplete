@@ -25,7 +25,7 @@ def build_engine(
     """
     return AutocompleteEngine(
         predictors=[
-            PrefixPredictor(
+            StaticPrefixPredictor(
                 vocabulary=["hello", "help", "helium", "hero"],
             ),
         ],
