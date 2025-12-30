@@ -1,4 +1,4 @@
-from .prefix import StaticPrefixPredictor
+from .static_prefix import StaticPrefixPredictor
 
 __all__ = ["StaticPrefixPredictor"]
 
