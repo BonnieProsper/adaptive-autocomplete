@@ -19,7 +19,9 @@ from aac.ranking.score import ScoreRanker
 
 class AutocompleteEngine:
     """
-    Orchestrates prediction, ranking, learning, and explanation.
+    Orchestrates prediction, ranking, learning, and explanation. 
+    Public entrypoint for the autocomplete system. 
+    Only documented methods are considered stable.
 
     Architectural invariants:
     - Engine owns the CompletionContext lifecycle
