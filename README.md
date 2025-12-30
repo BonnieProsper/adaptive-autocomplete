@@ -22,12 +22,11 @@ Suggestions + Explanations
 ## Design Principles
 
 Single Source of Truth:
-
 - History is owned by the engine
 - Rankers can read or learn from history but don't own it
 - Predictors are stateless by default
 
-  Explanation Model:
+Explanation Model:
 
 The system distinguishes between:
 - PredictorExplanation: raw unnormalized signals
