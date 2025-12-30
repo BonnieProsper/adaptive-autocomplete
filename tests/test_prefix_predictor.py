@@ -1,8 +1,8 @@
-from aac.predictors.prefix import PrefixPredictor
+from aac.predictors.static_prefix import StaticPrefixPredictor
 
 
 def test_prefix_predictor_basic() -> None:
-    predictor = PrefixPredictor(
+    predictor = StaticPrefixPredictor(
         vocabulary=["hello", "help", "helium", "world"]
     )
 
@@ -14,12 +14,12 @@ def test_prefix_predictor_basic() -> None:
 
 
 def test_prefix_predictor_empty_input() -> None:
-    predictor = PrefixPredictor(vocabulary=["hello"])
+    predictor = StaticPrefixPredictor(vocabulary=["hello"])
 
     assert predictor.predict("") == []
 
 
 def test_prefix_predictor_exact_match_not_repeated() -> None:
-    predictor = PrefixPredictor(vocabulary=["hello"])
+    predictor = StaticPrefixPredictor(vocabulary=["hello"])
 
     assert predictor.predict("hello") == []
