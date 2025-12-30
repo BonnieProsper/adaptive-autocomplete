@@ -3,7 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from aac.domain.predictor import Predictor
-from aac.domain.types import CompletionContext, Prediction
+from aac.domain.types import (
+    CompletionContext,
+    PredictorExplanation,
+    ScoredSuggestion,
+    Suggestion,
+    ensure_context,
+)
 
 
 class StaticPrefixPredictor(Predictor):
@@ -21,21 +27,31 @@ class StaticPrefixPredictor(Predictor):
         # Preserve order, remove duplicates
         self._vocabulary: tuple[str, ...] = tuple(dict.fromkeys(vocabulary))
 
-    def predict(self, ctx: CompletionContext) -> list[Prediction]:
-        prefix = ctx.text
+    def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
+        ctx = ensure_context(ctx)
+        prefix = ctx.prefix()
 
         if not prefix:
             return []
 
-        results: list[Prediction] = []
+        results: list[ScoredSuggestion] = []
 
         for word in self._vocabulary:
             if word.startswith(prefix):
                 results.append(
-                    Prediction(
-                        text=word,
+                    ScoredSuggestion(
+                        suggestion=Suggestion(value=word),
                         score=1.0,
-                        source=self.name,
+                        explanation=PredictorExplanation(
+                            value=word,
+                            score=1.0,
+                            source=self.name,
+                        ),
+                        trace=[
+                            f"prefix='{prefix}'",
+                            f"matched='{word}'",
+                            "score=1.0",
+                        ],
                     )
                 )
 
