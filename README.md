@@ -7,17 +7,7 @@ A self-learning autocompleter that uses various methods to improve its text sugg
 
 Autocomplete engine designed as a layered system that seperates signal generation, aggregation, ranking, learning, and explanation. Each layer has a single responsibility and explicit invariants, allowing the system to grow and evolve without accidental coupling or errors.
 
-User Input
-   ↓
-CompletionContext
-   ↓
-Predictors (raw signals)
-   ↓
-Weighted Aggregation
-   ↓
-Rankers (ordering + learning)
-   ↓
-Suggestions + Explanations
+User Input -> CompletionContext -> Predictors (raw signals) -> Weighted Aggregation -> Rankers (ordering + learning) -> Suggestions + Explanations
 
 ## Design Principles
 
@@ -66,7 +56,7 @@ Rankers:
 
 Explanations:
 
-- Always aligned with final ranking output
+- Always consistent with final ranking output
 - Aggregated across rankers
 - Exportable in JSON-safe form for APIs
 
