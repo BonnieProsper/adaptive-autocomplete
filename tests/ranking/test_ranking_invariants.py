@@ -4,7 +4,7 @@ import math
 
 from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion
 from aac.engine.engine import AutocompleteEngine
-from aac.predictors.prefix import PrefixPredictor
+from aac.predictors.static_prefix import StaticPrefixPredictor
 from aac.ranking.score import score_and_rank
 
 
@@ -15,7 +15,7 @@ def _scores(results: list[ScoredSuggestion]) -> list[float]:
 def test_ranking_is_deterministic():
     engine = AutocompleteEngine(
         predictors=[
-            PrefixPredictor(vocabulary=["hello", "help", "helium"])
+            StaticPrefixPredictor(vocabulary=["hello", "help", "helium"])
         ]
     )
 
@@ -77,8 +77,8 @@ def test_ranking_is_idempotent():
 def test_predictors_do_not_mutate_each_other():
     engine = AutocompleteEngine(
         predictors=[
-            PrefixPredictor(vocabulary=["hello", "help"]),
-            PrefixPredictor(vocabulary=["helium"]),
+            StaticPrefixPredictor(vocabulary=["hello", "help"]),
+            StaticPrefixPredictor(vocabulary=["helium"]),
         ]
     )
 
