@@ -12,48 +12,57 @@ from aac.domain.types import (
 )
 
 
-class PrefixPredictor(Predictor):
+class StaticPrefixPredictor(Predictor):
     """
-    Suggests words that start with the current token.
+    Deterministic prefix-based predictor over a static vocabulary.
 
-    Predictor contract:
-    - Emits deterministic base scores (1.0 per match)
-    - Does not apply normalization or weighting
-    - Ordering follows vocabulary order
+    Design goals:
+    - Uses CompletionContext.prefix() as the single source of truth
+    - Emits proportional base scores (longer prefix match = stronger signal)
+    - Produces stable, explainable output
+    - Does not perform ranking or normalization
     """
 
-    name: str = "prefix"
+    name: str = "static_prefix"
 
     def __init__(self, vocabulary: Iterable[str]) -> None:
-        # Preserve order, remove duplicates
+        # Preserve insertion order, remove duplicates
         self._vocabulary: tuple[str, ...] = tuple(dict.fromkeys(vocabulary))
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
+        prefix = ctx.prefix()
 
-        token = self._last_token(ctx.text)
-        if not token:
+        if not prefix:
             return []
 
         results: list[ScoredSuggestion] = []
 
         for word in self._vocabulary:
-            if word.startswith(token) and word != token:
-                results.append(
-                    ScoredSuggestion(
-                        suggestion=Suggestion(value=word),
-                        score=1.0,
-                        explanation=PredictorExplanation(
-                            value=word,
-                            score=1.0,
-                            source=self.name,
-                        ),
-                    )
+            if word == prefix:
+                continue
+
+            if not word.startswith(prefix):
+                continue
+
+            # Signal strength increases with prefix length
+            score = len(prefix) / len(word)
+
+            results.append(
+                ScoredSuggestion(
+                    suggestion=Suggestion(value=word),
+                    score=score,
+                    explanation=PredictorExplanation(
+                        value=word,
+                        score=score,
+                        source=self.name,
+                    ),
+                    trace=[
+                        f"prefix='{prefix}'",
+                        f"matched='{word}'",
+                        f"score={score:.3f}",
+                    ],
                 )
+            )
 
         return results
-
-    @staticmethod
-    def _last_token(text: str) -> str:
-        parts = text.rstrip().split()
-        return parts[-1] if parts else ""
