@@ -5,7 +5,7 @@ from pathlib import Path
 
 from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
-from aac.predictors.prefix import StaticPrefixPredictor
+from aac.predictors.static_prefix import StaticPrefixPredictor
 from aac.ranking.learning import LearningRanker
 from aac.storage.json_store import JsonHistoryStore
 
