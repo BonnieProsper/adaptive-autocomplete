@@ -144,14 +144,12 @@ This project intentionally does not aim to:
 
 # Tradeoffs
 
-- Simplicity over performance:
-  The engine prioritizes clarity and correctness over throughput.
+- Simplicity vs Performance: The engine prioritises clarity and correctness over throughput.
 
 - Determinism over stochastic models:
   No randomness or ML models are used.
 
-- Explicit design over implicit magic:
-  All ranking and learning behavior is visible and explainable.
+- All ranking and learning behavior is visible and explainable.
 
 
 ## Current Limitations
