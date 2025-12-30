@@ -1,9 +1,9 @@
 from aac.domain.types import CompletionContext
-from aac.predictors.prefix import PrefixPredictor
+from aac.predictors.static_prefix import StaticPrefixPredictor
 
 
 def test_prefix_predictor_basic_completion():
-    predictor = PrefixPredictor(
+    predictor = StaticPrefixPredictor(
         vocabulary=["hello", "help", "helium", "hero"]
     )
 
@@ -16,7 +16,7 @@ def test_prefix_predictor_basic_completion():
 
 
 def test_prefix_predictor_no_match():
-    predictor = PrefixPredictor(
+    predictor = StaticPrefixPredictor(
         vocabulary=["hello", "help"]
     )
 
@@ -27,7 +27,7 @@ def test_prefix_predictor_no_match():
 
 
 def test_prefix_predictor_scores_are_deterministic():
-    predictor = PrefixPredictor(
+    predictor = StaticPrefixPredictor(
         vocabulary=["hello", "help"]
     )
 
@@ -41,7 +41,7 @@ def test_prefix_predictor_scores_are_deterministic():
 
 
 def test_prefix_predictor_returns_new_objects():
-    predictor = PrefixPredictor(
+    predictor = StaticPrefixPredictor(
         vocabulary=["hello"]
     )
 
