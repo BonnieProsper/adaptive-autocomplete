@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from aac.domain.predictor import Predictor
 from aac.domain.types import CompletionContext, Prediction
@@ -10,18 +10,24 @@ class StaticPrefixPredictor(Predictor):
     """
     Deterministic prefix-based predictor.
 
-    This predictor performs a simple static prefix match against a fixed
-    vocabulary. All matches receive a score of 1.0 by design - ranking
-    is handled downstream by rankers, not predictors.
+    Performs a static prefix match against a fixed vocabulary.
+    All matches receive a neutral score of 1.0 by design.
+    Ranking and weighting are handled downstream.
     """
 
-    def __init__(self, vocabulary: Iterable[str]):
-        self._vocabulary = list(vocabulary)
+    name: str = "static_prefix"
 
-    def predict(self, ctx: CompletionContext) -> List[Prediction]:
+    def __init__(self, vocabulary: Iterable[str]) -> None:
+        # Preserve order, remove duplicates
+        self._vocabulary: tuple[str, ...] = tuple(dict.fromkeys(vocabulary))
+
+    def predict(self, ctx: CompletionContext) -> list[Prediction]:
         prefix = ctx.text
 
-        results: List[Prediction] = []
+        if not prefix:
+            return []
+
+        results: list[Prediction] = []
 
         for word in self._vocabulary:
             if word.startswith(prefix):
