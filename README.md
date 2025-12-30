@@ -73,6 +73,19 @@ Explanations:
 - Exportable in JSON-safe form for APIs
 
 
+## Public API
+
+The following methods are considered stable and safe for external use:
+
+- AutocompleteEngine.suggest(text: str) -> list[Suggestion]
+- AutocompleteEngine.explain(text: str) -> list[RankingExplanation]
+- AutocompleteEngine.explain_as_dicts(text: str) -> list[dict]
+- AutocompleteEngine.record_selection(text: str, value: str)
+- AutocompleteEngine.history (read-only)
+
+All other methods and attributes are considered internal and could change without notice.
+
+
 ## Design Scaling
 
 This system is intentionally designed to scale beyond autocomplete.
@@ -85,3 +98,49 @@ The same architecture supports:
 
 New predictors, rankers, or learning strategies can be introduced
 without modifying existing components.
+
+
+## Extension Points
+
+Custom predictors may be implemented by conforming to the Predictor protocol.
+
+Predictors:
+- Produce ScoredSuggestion
+- Must not mutate shared state
+- Should emit PredictorExplanation when possible
+
+Custom rankers must implement the Ranker interface.
+
+Rankers:
+- Operate on scored suggestions
+- Must preserve determinism
+- Must not strip scores or suggestions
+- May optionally learn from History
+
+Weighted Components:
+
+Predictors and rankers may be wrapped with weights
+to influence their relative impact without modifying logic.
+
+
+## Stability Guarantees
+
+This project follows these stability rules:
+
+- Core domain types (Suggestion, ScoredSuggestion, CompletionContext)
+  are stable once released
+- Public engine methods are backward compatible
+- Internal helper methods may change freely
+- Explanation fields are additive only (no breaking removals)
+
+
+## Non-Goals
+
+This project intentionally does not aim to:
+
+- Be a full ML framework
+- Optimize for maximum performance
+- Provide a UI or frontend
+- Compete with production search engines
+
+
