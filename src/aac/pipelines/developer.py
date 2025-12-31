@@ -32,7 +32,7 @@ def build_developer_pipeline(
             weight=2.0,  # user intent matters more
         ),
         WeightedPredictor(
-            predictor=FrequencyPredictor(frequencies=DEFAULT_FREQUENCIES, max_results=10),
+            predictor=FrequencyPredictor(frequencies=DEFAULT_FREQUENCIES),
             weight=0.5,  # weak global bias
         ),
     ]
