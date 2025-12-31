@@ -60,7 +60,16 @@ class Trie:
 
 
 class TriePrefixPredictor(Predictor):
-    name = "trie_prefix"
+    """
+    Prefix predictor backed by a trie for efficient lookup.
+
+    Responsibilities:
+    - Efficient prefix recall
+    - Deterministic ordering
+    - Neutral base scoring
+    """
+
+    name: str = "trie_prefix"
 
     def __init__(self, words: Iterable[str], *, max_results: int = 10) -> None:
         self._trie = Trie(words)
@@ -68,21 +77,35 @@ class TriePrefixPredictor(Predictor):
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
-        token = ctx.text.rstrip().split()[-1] if ctx.text else ""
-        if not token:
+        prefix = ctx.prefix()
+
+        if not prefix:
             return []
 
-        matches = self._trie.find_prefix(token, limit=self._max_results)
+        matches = self._trie.find_prefix(prefix, limit=self._max_results)
 
-        return [
-            ScoredSuggestion(
-                suggestion=Suggestion(value=word),
-                score=1.0,
-                explanation=PredictorExplanation(
-                    value=word,
+        results: list[ScoredSuggestion] = []
+
+        for word in matches:
+            # Do not repeat exact matches
+            if word == prefix:
+                continue
+
+            results.append(
+                ScoredSuggestion(
+                    suggestion=Suggestion(value=word),
                     score=1.0,
-                    source=self.name,
-                ),
+                    explanation=PredictorExplanation(
+                        value=word,
+                        score=1.0,
+                        source=self.name,
+                    ),
+                    trace=[
+                        f"prefix='{prefix}'",
+                        f"matched='{word}'",
+                        "score=1.0",
+                    ],
+                )
             )
-            for word in matches
-        ]
+
+        return results
