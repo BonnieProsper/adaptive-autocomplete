@@ -6,6 +6,15 @@ from aac.predictors.static_prefix import StaticPrefixPredictor
 from aac.predictors.trie import TriePrefixPredictor
 
 
+DEFAULT_FREQUENCIES: dict[str, int] = {
+    # minimal dev-safe defaults
+    "print": 100,
+    "import": 90,
+    "def": 80,
+    "class": 70,
+}
+
+
 def build_developer_pipeline(
     vocabulary: list[str],
     history: History,
@@ -24,7 +33,7 @@ def build_developer_pipeline(
             weight=2.0,  # user intent matters more
         ),
         WeightedPredictor(
-            predictor=FrequencyPredictor(),
+            predictor=FrequencyPredictor(frequencies=DEFAULT_FREQUENCIES, max_results=10),
             weight=0.5,  # weak global bias
         ),
     ]
