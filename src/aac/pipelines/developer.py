@@ -5,7 +5,6 @@ from aac.predictors.history import HistoryPredictor
 from aac.predictors.static_prefix import StaticPrefixPredictor
 from aac.predictors.trie import TriePrefixPredictor
 
-
 DEFAULT_FREQUENCIES: dict[str, int] = {
     # minimal dev-safe defaults
     "print": 100,
