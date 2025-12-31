@@ -17,8 +17,7 @@ class StaticPrefixPredictor(Predictor):
     Deterministic prefix-based predictor.
 
     Performs a static prefix match against a fixed vocabulary.
-    All matches receive a neutral score of 1.0 by design.
-    Ranking and weighting are handled downstream.
+    Emits neutral scores; ranking is handled downstream.
     """
 
     name: str = "static_prefix"
@@ -37,22 +36,28 @@ class StaticPrefixPredictor(Predictor):
         results: list[ScoredSuggestion] = []
 
         for word in self._vocabulary:
-            if word.startswith(prefix):
-                results.append(
-                    ScoredSuggestion(
-                        suggestion=Suggestion(value=word),
+            # Do not repeat exact matches
+            if word == prefix:
+                continue
+
+            if not word.startswith(prefix):
+                continue
+
+            results.append(
+                ScoredSuggestion(
+                    suggestion=Suggestion(value=word),
+                    score=1.0,
+                    explanation=PredictorExplanation(
+                        value=word,
                         score=1.0,
-                        explanation=PredictorExplanation(
-                            value=word,
-                            score=1.0,
-                            source=self.name,
-                        ),
-                        trace=[
-                            f"prefix='{prefix}'",
-                            f"matched='{word}'",
-                            "score=1.0",
-                        ],
-                    )
+                        source=self.name,
+                    ),
+                    trace=[
+                        f"prefix='{prefix}'",
+                        f"matched='{word}'",
+                        "score=1.0",
+                    ],
                 )
+            )
 
         return results
