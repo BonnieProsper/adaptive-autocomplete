@@ -1,9 +1,9 @@
+from aac.domain.history import History
 from aac.domain.types import WeightedPredictor
+from aac.predictors.frequency import FrequencyPredictor
+from aac.predictors.history import HistoryPredictor
 from aac.predictors.static_prefix import StaticPrefixPredictor
 from aac.predictors.trie import TriePrefixPredictor
-from aac.predictors.history import HistoryPredictor
-from aac.predictors.frequency import FrequencyPredictor
-from aac.domain.history import History
 
 
 def build_developer_pipeline(
