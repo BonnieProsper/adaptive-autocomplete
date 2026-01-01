@@ -19,8 +19,9 @@ from aac.ranking.score import ScoreRanker
 
 class AutocompleteEngine:
     """
-    Orchestrates prediction, ranking, learning, and explanation. 
-    Public entrypoint for the autocomplete system. 
+    Orchestrates prediction, ranking, learning, and explanation.
+
+    Public entrypoint for the autocomplete system.
     Only documented methods are considered stable.
 
     Architectural invariants:
@@ -68,8 +69,6 @@ class AutocompleteEngine:
         else:
             self._history = History()
 
-    # Predictors are the sole producers of ScoredSuggestion.
-    # Engine aggregates, weights, and merges them.
     def _score(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
         Collect and aggregate scored suggestions from all predictors.
@@ -79,7 +78,7 @@ class AutocompleteEngine:
         - Scores are summed
         - Predictor weights are applied exactly once
         - Explanation is preserved from the first producer
-        - Trace logs all contributions for debugging
+        - Trace logs all contributions for debugging and attribution
         """
         aggregated: dict[str, ScoredSuggestion] = {}
 
@@ -89,6 +88,7 @@ class AutocompleteEngine:
             for scored in results:
                 key = scored.suggestion.value
                 weighted_score = scored.score * weighted.weight
+
                 trace_entry = (
                     f"Predictor={weighted.predictor.__class__.__name__}, "
                     f"weight={weighted.weight}, raw_score={scored.score}"
@@ -139,7 +139,7 @@ class AutocompleteEngine:
 
     def suggest(self, text: str) -> list[Suggestion]:
         """
-        Public API: return ranked suggestions without scores for the given input.
+        Public API: return ranked suggestions without scores.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
@@ -161,7 +161,9 @@ class AutocompleteEngine:
     def explain(self, text: str) -> list[RankingExplanation]:
         """
         Public API: explain how suggestions were ranked.
-        Aggregates explanations across all rankers.
+
+        Aggregates explanations across all rankers while preserving
+        final ranked order.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
@@ -176,7 +178,6 @@ class AutocompleteEngine:
                 else:
                     aggregated[exp.value].merge(exp)
 
-        # preserve ranked order
         return [
             aggregated[s.suggestion.value]
             for s in ranked
