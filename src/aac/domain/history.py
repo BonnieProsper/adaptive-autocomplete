@@ -18,7 +18,7 @@ class History:
     """
     Append-only store of user completion events.
 
-    Acts as the source of truth for all learning signals.
+    Acts as the single source of truth for all learning signals.
     """
 
     def __init__(self) -> None:
@@ -77,4 +77,3 @@ class History:
             prefix: dict(values)
             for prefix, values in snapshot.items()
         }
-
