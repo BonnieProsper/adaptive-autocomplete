@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -13,15 +14,31 @@ class LearningRanker(Ranker, LearnsFromHistory):
     """
     Ranker that adapts suggestion ordering based on user selection history.
 
+    Learning model:
+    - Boost = log1p(selection_count) * weight
+    - Monotonic, bounded, explainable
+
     Invariants:
-    - No history signal = original order preserved
-    - Learning is additive & monotonic
+    - No history signal => original order preserved
+    - Learning is additive (never suppresses)
     - Does not mutate input suggestions
     """
 
-    def __init__(self, history: History, boost: float = 1.0) -> None:
+    def __init__(self, history: History, weight: float = 1.0) -> None:
         self.history = history
-        self._boost = boost
+        self._weight = weight
+
+    def _history_boost(self, count: int) -> float:
+        """
+        Compute a bounded, monotonic learning boost.
+
+        Rationale:
+        - log1p prevents runaway dominance
+        - deterministic & explainable
+        """
+        if count <= 0:
+            return 0.0
+        return math.log1p(count) * self._weight
 
     def rank(
         self,
@@ -32,7 +49,6 @@ class LearningRanker(Ranker, LearnsFromHistory):
             return []
 
         counts = self.history.counts_for_prefix(prefix)
-
         if not counts:
             return list(suggestions)
 
@@ -40,11 +56,10 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            score = s.score + count * self._boost
-            adjusted.append((score, s))
+            boost = self._history_boost(count)
+            adjusted.append((s.score + boost, s))
 
         adjusted.sort(key=lambda t: t[0], reverse=True)
-
         return [s for _, s in adjusted]
 
     def explain(
@@ -58,14 +73,14 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            history_boost = count * self._boost
+            boost = self._history_boost(count)
 
             explanations.append(
                 RankingExplanation(
                     value=s.suggestion.value,
                     base_score=s.score,
-                    history_boost=history_boost,
-                    final_score=s.score + history_boost,
+                    history_boost=boost,
+                    final_score=s.score + boost,
                     source="learning",
                 )
             )
@@ -81,8 +96,8 @@ class LearningRanker(Ranker, LearnsFromHistory):
         Export ranking explanations in a JSON-safe, stable schema.
 
         NOTE:
-        - Intentionally excludes internal metadata (e.g source)
-        - This is a public-facing contract
+        - Public contract
+        - Internal mechanics intentionally excluded
         """
         return [
             {
