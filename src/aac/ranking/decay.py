@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-
 from aac.domain.history import History
 from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
