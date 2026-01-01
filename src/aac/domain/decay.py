@@ -1,46 +1,41 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+import math
+from dataclasses import dataclass
+from datetime import datetime, timezone
 
 
-class DecayFunction(ABC):
+@dataclass(frozen=True)
+class DecayFunction:
     """
-    Strategy interface for decaying historical learning signals.
+    Time-based decay function.
 
-    Decay functions are pure and deterministic.
+    Converts elapsed time (seconds) into a weight in [0, 1].
+
+    Properties: Monotonic decreasing, deterministic, explainable
     """
 
-    @abstractmethod
-    def apply(self, count: int) -> float:
+    half_life_seconds: float
+
+    def weight(self, *, now: datetime, event_time: datetime) -> float:
         """
-        Apply decay to a raw selection count.
+        Compute decay weight for an event timestamp.
+
+        Uses exponential decay:
+            weight = 0.5 ** (elapsed / half_life)
         """
-        raise NotImplementedError
+        if event_time > now:
+            return 1.0
+
+        elapsed = (now - event_time).total_seconds()
+        if elapsed <= 0:
+            return 1.0
+
+        return 0.5 ** (elapsed / self.half_life_seconds)
 
 
-class NoDecay(DecayFunction):
+def utcnow() -> datetime:
     """
-    Identity decay.
-
-    Default behavior: no decay applied.
+    Centralized time source (UTC, timezone-aware).
     """
-
-    def apply(self, count: int) -> float:
-        return float(count)
-
-
-class LinearDecay(DecayFunction):
-    """
-    Simple linear decay.
-
-    Example:
-        count=10, factor=0.5 -> 5.0
-    """
-
-    def __init__(self, factor: float) -> None:
-        if factor <= 0.0:
-            raise ValueError("Decay factor must be positive")
-        self._factor = factor
-
-    def apply(self, count: int) -> float:
-        return count * self._factor
+    return datetime.now(tz=timezone.utc)
