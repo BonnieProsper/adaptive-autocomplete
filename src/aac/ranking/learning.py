@@ -14,12 +14,13 @@ class LearningRanker(Ranker, LearnsFromHistory):
     Ranker that adapts suggestion ordering based on user selection history.
 
     Learning model:
-    - Boost = selection_count * weight
+    - Boost = min(selection_count * weight, max_boost)
     - Linear, monotonic, fully explainable
 
     Invariants:
     - No history signal => original order preserved
     - Learning is additive (never suppresses)
+    - Boost is capped (prevents runaway dominance)
     - Does not mutate input suggestions
     """
 
@@ -29,12 +30,14 @@ class LearningRanker(Ranker, LearnsFromHistory):
         weight: float = 1.0,
         *,
         boost: float | None = None,
+        max_boost: float | None = None,
     ) -> None:
         """
         Parameters:
         - history: shared selection history (single source of truth)
         - weight: canonical learning strength
         - boost: public alias for weight (API compatibility)
+        - max_boost: upper bound on learning influence (optional)
         """
         if boost is not None:
             if weight != 1.0:
@@ -43,21 +46,26 @@ class LearningRanker(Ranker, LearnsFromHistory):
                 )
             weight = boost
 
+        if max_boost is not None and max_boost < 0.0:
+            raise ValueError("max_boost must be non-negative")
+
         self.history = history
         self._weight = weight
+        self._max_boost = max_boost
 
     def _history_boost(self, count: int) -> float:
         """
-        Compute a linear, monotonic learning boost.
-
-        Rationale:
-        - Fully explainable
-        - Matches public API expectations
-        - Easy to extend later (decay, caps, non-linear variants)
+        Compute a linear, monotonic learning boost with optional cap.
         """
         if count <= 0:
             return 0.0
-        return count * self._weight
+
+        boost = count * self._weight
+
+        if self._max_boost is not None:
+            boost = min(boost, self._max_boost)
+
+        return boost
 
     def rank(
         self,
