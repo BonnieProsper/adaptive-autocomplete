@@ -7,7 +7,6 @@ from aac.engine.engine import AutocompleteEngine
 from aac.pipelines.developer import build_developer_pipeline
 from aac.storage.json_store import JsonHistoryStore
 
-
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 
 
