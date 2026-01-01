@@ -40,7 +40,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         - boost: public alias for weight (API compatibility)
         - max_boost: absolute upper bound on learning influence (optional)
         - dominance_ratio: relative cap as a fraction of base score
-            e.g. 1.0 => learning ≤ 100% of base relevance
+            e.g 1.0 => learning ≤ 100% of base relevance
         """
         if boost is not None:
             if weight != 1.0:
