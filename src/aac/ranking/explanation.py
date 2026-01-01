@@ -25,9 +25,6 @@ class RankingExplanation:
     source: str
 
     def __post_init__(self) -> None:
-        """
-        Enforce internal consistency.
-        """
         expected = self.base_score + self.history_boost
         if abs(self.final_score - expected) > 1e-9:
             raise ValueError(
@@ -37,24 +34,25 @@ class RankingExplanation:
             )
 
     def to_dict(self) -> dict[str, float | str]:
-        """
-        Export explanation in a JSON-serializable form.
-        """
         return asdict(self)
 
-    def merge(self, other: RankingExplanation) -> None:
+    def merge(self, other: RankingExplanation) -> RankingExplanation:
         """
-        Safely merge another explanation into this one.
-        Only the scores are summed; the source remains unchanged.
+        Return a new explanation representing the merged contribution
+        of this explanation and another.
+
+        Only scores are combined; the source remains unchanged.
         """
         if self.value != other.value:
             raise ValueError("Cannot merge explanations for different values")
 
-        object.__setattr__(self, "base_score", self.base_score + other.base_score)
-        object.__setattr__(
-            self, "history_boost", self.history_boost + other.history_boost
+        return RankingExplanation(
+            value=self.value,
+            base_score=self.base_score + other.base_score,
+            history_boost=self.history_boost + other.history_boost,
+            final_score=self.final_score + other.final_score,
+            source=self.source,
         )
-        object.__setattr__(self, "final_score", self.final_score + other.final_score)
 
     @staticmethod
     def from_predictor(
@@ -63,9 +61,6 @@ class RankingExplanation:
         score: float,
         source: str,
     ) -> RankingExplanation:
-        """
-        Create an explanation directly from a predictor output.
-        """
         return RankingExplanation(
             value=value,
             base_score=score,
@@ -75,9 +70,6 @@ class RankingExplanation:
         )
 
     def apply_history_boost(self, boost: float) -> RankingExplanation:
-        """
-        Return a new explanation with a learning-based adjustment applied.
-        """
         return RankingExplanation(
             value=self.value,
             base_score=self.base_score,
