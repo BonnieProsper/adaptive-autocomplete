@@ -14,13 +14,13 @@ class LearningRanker(Ranker, LearnsFromHistory):
     Ranker that adapts suggestion ordering based on user selection history.
 
     Learning model:
-    - Boost = min(selection_count * weight, max_boost)
-    - Linear, monotonic, fully explainable
+    - Raw boost = selection_count * weight
+    - Boost is bounded to prevent dominance over base relevance
 
     Invariants:
     - No history signal => original order preserved
     - Learning is additive (never suppresses)
-    - Boost is capped (prevents runaway dominance)
+    - Learning influence is bounded (absolute + relative)
     - Does not mutate input suggestions
     """
 
@@ -31,13 +31,16 @@ class LearningRanker(Ranker, LearnsFromHistory):
         *,
         boost: float | None = None,
         max_boost: float | None = None,
+        dominance_ratio: float = 1.0,
     ) -> None:
         """
         Parameters:
         - history: shared selection history (single source of truth)
         - weight: canonical learning strength
         - boost: public alias for weight (API compatibility)
-        - max_boost: upper bound on learning influence (optional)
+        - max_boost: absolute upper bound on learning influence (optional)
+        - dominance_ratio: relative cap as a fraction of base score
+            e.g. 1.0 => learning ≤ 100% of base relevance
         """
         if boost is not None:
             if weight != 1.0:
@@ -49,21 +52,39 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if max_boost is not None and max_boost < 0.0:
             raise ValueError("max_boost must be non-negative")
 
+        if dominance_ratio < 0.0:
+            raise ValueError("dominance_ratio must be non-negative")
+
         self.history = history
         self._weight = weight
         self._max_boost = max_boost
+        self._dominance_ratio = dominance_ratio
 
-    def _history_boost(self, count: int) -> float:
+    def _history_boost(self, count: int, base_score: float) -> float:
         """
-        Compute a linear, monotonic learning boost with optional cap.
+        Compute a bounded learning boost.
+
+        Bounding strategy:
+        - Linear raw learning signal
+        - Optional absolute cap
+        - Relative cap based on base relevance
+
+        This guarantees learning can never dominate relevance.
         """
         if count <= 0:
             return 0.0
 
+        # Raw learning signal
         boost = count * self._weight
 
+        # Absolute cap (if configured)
         if self._max_boost is not None:
             boost = min(boost, self._max_boost)
+
+        # Relative cap (dominance bound)
+        if base_score > 0.0:
+            relative_cap = self._dominance_ratio * base_score
+            boost = min(boost, relative_cap)
 
         return boost
 
@@ -83,7 +104,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            boost = self._history_boost(count)
+            boost = self._history_boost(count, s.score)
             adjusted.append((s.score + boost, s))
 
         adjusted.sort(key=lambda t: t[0], reverse=True)
@@ -100,7 +121,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            boost = self._history_boost(count)
+            boost = self._history_boost(count, s.score)
 
             explanations.append(
                 RankingExplanation(
