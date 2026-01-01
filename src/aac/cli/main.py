@@ -11,15 +11,16 @@ from aac.ranking.learning import LearningRanker
 from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
+DEFAULT_LIMIT = 10
 
 
 def build_engine(history: History) -> AutocompleteEngine:
     """
-    Build the autocomplete engine.
+    Construct the autocomplete engine.
 
-    Kept explicit and pure so:
-    - behavior is deterministic
-    - tests are simple
+    This function is intentionally explicit:
+    - predictable behavior
+    - testable construction
     - pipelines can replace this later
     """
     return AutocompleteEngine(
@@ -36,13 +37,10 @@ def build_engine(history: History) -> AutocompleteEngine:
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="aac",
-        description="Adaptive autocomplete engine with learning",
+        description="Adaptive autocomplete engine with learning and explainability",
     )
 
-    subparsers = parser.add_subparsers(
-        dest="command",
-        required=True,
-    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     # suggest
     suggest = subparsers.add_parser(
@@ -50,6 +48,17 @@ def main() -> None:
         help="Generate autocomplete suggestions",
     )
     suggest.add_argument("text", type=str)
+    suggest.add_argument(
+        "--limit",
+        type=int,
+        default=DEFAULT_LIMIT,
+        help="Maximum number of suggestions to display",
+    )
+    suggest.add_argument(
+        "--explain",
+        action="store_true",
+        help="Show scoring explanations instead of plain suggestions",
+    )
 
     # select
     select = subparsers.add_parser(
@@ -68,18 +77,39 @@ def main() -> None:
     engine = build_engine(history)
 
     if args.command == "suggest":
-        handle_suggest(engine, args.text)
-
+        handle_suggest(
+            engine=engine,
+            text=args.text,
+            limit=args.limit,
+            explain=args.explain,
+        )
     elif args.command == "select":
-        handle_select(engine, store, args.text, args.value)
+        handle_select(
+            engine=engine,
+            store=store,
+            text=args.text,
+            value=args.value,
+        )
 
 
 def handle_suggest(
     engine: AutocompleteEngine,
     text: str,
+    limit: int,
+    explain: bool,
 ) -> None:
-    suggestions = engine.suggest(text)
+    if explain:
+        explanations = engine.explain(text)[:limit]
+        for exp in explanations:
+            print(
+                f"{exp.value:12} "
+                f"base={exp.base_score:.2f} "
+                f"+ history={exp.history_boost:.2f} "
+                f"=> {exp.final_score:.2f}"
+            )
+        return
 
+    suggestions = engine.suggest(text)[:limit]
     for suggestion in suggestions:
         print(suggestion.value)
 
