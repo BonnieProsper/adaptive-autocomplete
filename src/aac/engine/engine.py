@@ -176,7 +176,12 @@ class AutocompleteEngine:
                 else:
                     aggregated[exp.value].merge(exp)
 
-        return list(aggregated.values())
+        # preserve ranked order
+        return [
+            aggregated[s.suggestion.value]
+            for s in ranked
+            if s.suggestion.value in aggregated
+        ]
 
     def explain_as_dicts(self, text: str) -> list[dict[str, float | str]]:
         """
