@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -15,8 +14,8 @@ class LearningRanker(Ranker, LearnsFromHistory):
     Ranker that adapts suggestion ordering based on user selection history.
 
     Learning model:
-    - Boost = log1p(selection_count) * weight
-    - Monotonic, bounded, explainable
+    - Boost = selection_count * weight
+    - Linear, monotonic, fully explainable
 
     Invariants:
     - No history signal => original order preserved
@@ -35,7 +34,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         Parameters:
         - history: shared selection history (single source of truth)
         - weight: canonical learning strength
-        - boost: public alias for weight (supported for API stability)
+        - boost: public alias for weight (API compatibility)
         """
         if boost is not None:
             if weight != 1.0:
@@ -49,15 +48,16 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
     def _history_boost(self, count: int) -> float:
         """
-        Compute a bounded, monotonic learning boost.
+        Compute a linear, monotonic learning boost.
 
         Rationale:
-        - log1p prevents runaway dominance
-        - deterministic & explainable
+        - Fully explainable
+        - Matches public API expectations
+        - Easy to extend later (decay, caps, non-linear variants)
         """
         if count <= 0:
             return 0.0
-        return math.log1p(count) * self._weight
+        return count * self._weight
 
     def rank(
         self,
