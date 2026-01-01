@@ -3,35 +3,17 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
-from aac.predictors.static_prefix import StaticPrefixPredictor
-from aac.ranking.learning import LearningRanker
+from aac.pipelines.developer import build_developer_pipeline
 from aac.storage.json_store import JsonHistoryStore
+
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 
 
-def build_engine(
-    history: History,
-) -> AutocompleteEngine:
-    """
-    Build the autocomplete engine.
-
-    Kept pure and explicit so:
-    - it is testable
-    - persistence is handled outside
-    - behavior matches production usage
-    """
-    return AutocompleteEngine(
-        predictors=[
-            StaticPrefixPredictor(
-                vocabulary=["hello", "help", "helium", "hero"],
-            ),
-        ],
-        ranker=LearningRanker(history),
-        history=history,
-    )
+PIPELINES = {
+    "developer": build_developer_pipeline,
+}
 
 
 def main() -> None:
@@ -52,9 +34,16 @@ def main() -> None:
     )
     suggest.add_argument("text", type=str)
     suggest.add_argument(
-        "--explain",
-        action="store_true",
-        help="Show ranking explanations",
+        "--pipeline",
+        choices=PIPELINES.keys(),
+        default="developer",
+        help="Pipeline to use",
+    )
+    suggest.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Maximum number of suggestions",
     )
 
     # SELECT
@@ -64,19 +53,28 @@ def main() -> None:
     )
     select.add_argument("text", type=str)
     select.add_argument("value", type=str)
+    select.add_argument(
+        "--pipeline",
+        choices=PIPELINES.keys(),
+        default="developer",
+        help="Pipeline to use",
+    )
 
     args = parser.parse_args()
 
-    # PERSISTENCE
+    # Persistence
     store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
     history = store.load()
-    engine = build_engine(history)
+
+    # Pipeline selection
+    pipeline_builder = PIPELINES[args.pipeline]
+    engine: AutocompleteEngine = pipeline_builder(history)
 
     if args.command == "suggest":
         handle_suggest(
             engine=engine,
             text=args.text,
-            explain=args.explain,
+            limit=args.limit,
         )
 
     elif args.command == "select":
@@ -91,23 +89,16 @@ def main() -> None:
 def handle_suggest(
     engine: AutocompleteEngine,
     text: str,
-    explain: bool,
+    limit: int,
 ) -> None:
-    suggestions = engine.suggest(text)
+    results = engine.suggest(text, limit=limit)
 
-    if not explain:
-        for suggestion in suggestions:
-            print(suggestion.value)
-        return
-
-    explanations = engine.explain(text)
-
-    for explanation in explanations:
+    for idx, suggestion in enumerate(results, start=1):
         print(
-            f"{explanation.value:12} "
-            f"base={explanation.base_score:.2f} "
-            f"+ history={explanation.history_boost:.2f} "
-            f"=> {explanation.final_score:.2f}"
+            f"{idx:2d}. "
+            f"{suggestion.value:20} "
+            f"score={suggestion.score:.2f} "
+            f"source={suggestion.explanation.source}"
         )
 
 
