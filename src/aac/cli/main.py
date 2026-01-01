@@ -83,10 +83,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # persistence
+    # Persistence boundary 
     store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
     history = store.load()
 
+    # Engine construction 
     engine = build_engine(history)
 
     if args.command == "suggest":
@@ -96,6 +97,7 @@ def main() -> None:
             limit=args.limit,
             explain=args.explain,
         )
+
     elif args.command == "select":
         handle_select(
             engine=engine,
@@ -103,6 +105,7 @@ def main() -> None:
             text=args.text,
             value=args.value,
         )
+
     elif args.command == "debug":
         engine.debug_pipeline(args.text)
 
@@ -113,6 +116,13 @@ def handle_suggest(
     limit: int,
     explain: bool,
 ) -> None:
+    """
+    Suggest completions for a given input.
+
+    Read-only operation:
+    - does not mutate history
+    - does not persist state
+    """
     if explain:
         explanations = engine.explain(text)[:limit]
         for exp in explanations:
@@ -135,6 +145,9 @@ def handle_select(
     text: str,
     value: str,
 ) -> None:
+    """
+    Record a user selection and persist learning state.
+    """
     engine.record_selection(text, value)
     store.save(engine.history)
     print(f"Recorded selection '{value}' for input '{text}'")
