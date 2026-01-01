@@ -110,4 +110,3 @@ class DecayRanker(Ranker, LearnsFromHistory):
             )
 
         return explanations
-
