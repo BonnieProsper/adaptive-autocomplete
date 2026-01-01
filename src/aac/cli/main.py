@@ -1,4 +1,4 @@
-# TODO Extend later, make better
+# TODO Extend later, add pipelines etc
 from __future__ import annotations
 
 import argparse
