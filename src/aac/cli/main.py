@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from aac.domain.history import History
+from aac.domain.types import WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.static_prefix import StaticPrefixPredictor
 from aac.ranking.learning import LearningRanker
@@ -23,11 +24,15 @@ def build_engine(history: History) -> AutocompleteEngine:
     - predictable behavior
     - testable construction
     - mirrors production usage
+    - predictor weights are first-class
     """
     return AutocompleteEngine(
         predictors=[
-            StaticPrefixPredictor(
-                vocabulary=["hello", "help", "helium", "hero"],
+            WeightedPredictor(
+                predictor=StaticPrefixPredictor(
+                    vocabulary=["hello", "help", "helium", "hero"],
+                ),
+                weight=1.0,
             ),
         ],
         ranker=LearningRanker(history),
@@ -69,11 +74,19 @@ def main() -> None:
     select.add_argument("text", type=str)
     select.add_argument("value", type=str)
 
+    # debug
+    debug = subparsers.add_parser(
+        "debug",
+        help="Show full prediction and ranking pipeline (developer tool)",
+    )
+    debug.add_argument("text", type=str)
+
     args = parser.parse_args()
 
     # persistence
     store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
     history = store.load()
+
     engine = build_engine(history)
 
     if args.command == "suggest":
@@ -90,6 +103,8 @@ def main() -> None:
             text=args.text,
             value=args.value,
         )
+    elif args.command == "debug":
+        engine.debug_pipeline(args.text)
 
 
 def handle_suggest(
