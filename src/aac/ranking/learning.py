@@ -24,7 +24,26 @@ class LearningRanker(Ranker, LearnsFromHistory):
     - Does not mutate input suggestions
     """
 
-    def __init__(self, history: History, weight: float = 1.0) -> None:
+    def __init__(
+        self,
+        history: History,
+        weight: float = 1.0,
+        *,
+        boost: float | None = None,
+    ) -> None:
+        """
+        Parameters:
+        - history: shared selection history (single source of truth)
+        - weight: canonical learning strength
+        - boost: public alias for weight (supported for API stability)
+        """
+        if boost is not None:
+            if weight != 1.0:
+                raise ValueError(
+                    "Specify only one of 'weight' or 'boost', not both"
+                )
+            weight = boost
+
         self.history = history
         self._weight = weight
 
