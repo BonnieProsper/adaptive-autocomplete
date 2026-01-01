@@ -19,10 +19,10 @@ def build_engine(history: History) -> AutocompleteEngine:
     """
     Construct the autocomplete engine.
 
-    This function is intentionally explicit:
+    Intentionally explicit:
     - predictable behavior
     - testable construction
-    - pipelines can replace this later
+    - mirrors production usage
     """
     return AutocompleteEngine(
         predictors=[
@@ -74,7 +74,6 @@ def main() -> None:
     # persistence
     store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
     history = store.load()
-
     engine = build_engine(history)
 
     if args.command == "suggest":
