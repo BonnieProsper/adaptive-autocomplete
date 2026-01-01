@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .history import History, HistoryEntry
+from .history import History
 
 
 class HistoryStore:
