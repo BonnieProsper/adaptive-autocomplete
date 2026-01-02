@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from aac.config import EngineConfig
 from aac.domain.history import History
 from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
@@ -16,15 +15,14 @@ class LearningRanker(Ranker, LearnsFromHistory):
     Ranker that adapts suggestion ordering based on user selection history.
 
     Learning model:
-    - Historical counts are exponentially decayed
-    - Learning is gated by a minimum sample threshold
-    - Boost is bounded (absolute + relative dominance)
+    - Historical counts produce additive score boosts
+    - Boosts are bounded to prevent runaway dominance
+    - No signal => original order preserved
 
     Invariants:
-    - No history signal => original order preserved
-    - Learning is additive (never suppresses)
-    - Learning influence is bounded
-    - Does not mutate input suggestions
+    - Pure: does not mutate history or suggestions
+    - Stable: preserves order without history
+    - Additive: learning never suppresses suggestions
     """
 
     def __init__(
@@ -34,62 +32,47 @@ class LearningRanker(Ranker, LearnsFromHistory):
         boost: float = 1.0,
         dominance_ratio: float = 1.0,
     ) -> None:
-        if max_boost is not None and max_boost < 0.0:
-            raise ValueError("max_boost must be non-negative")
+        if boost < 0.0:
+            raise ValueError("boost must be non-negative")
 
         if dominance_ratio < 0.0:
             raise ValueError("dominance_ratio must be non-negative")
 
-        self.history = history
-        self._config = config
-        self._boost = max_boost
+        self._history = history
+        self._boost = boost
         self._dominance_ratio = dominance_ratio
 
     def _decayed_count(self, count: int) -> float:
         """
         Apply exponential decay to a raw count.
 
-        Decay formula:
-            decayed = count * exp(-decay_rate * count)
-
-        This:
-        - rewards recent repetition
-        - prevents runaway growth
+        This prevents runaway growth while still
+        rewarding repeated selection.
         """
         if count <= 0:
             return 0.0
 
-        return count * math.exp(
-            -self._config.decay_rate * count
-        )
+        # Simple, explainable decay
+        return count * math.exp(-0.5 * count)
 
     def _history_boost(self, *, count: int, base_score: float) -> float:
         """
         Compute a bounded learning boost.
 
         Bounding strategy:
-        - Minimum sample gate
-        - Decayed linear signal
-        - Global history weight
-        - Optional absolute cap
+        - Decayed count signal
+        - Global boost weight
         - Relative dominance cap
         """
-        if count < self._config.min_samples:
+        if count <= 0:
             return 0.0
 
         decayed = self._decayed_count(count)
-        boost = decayed * self._config.history_weight
-
-        # Absolute cap
-        if self._max_boost is not None:
-            boost = min(boost, self._max_boost)
+        boost = decayed * self._boost
 
         # Relative dominance cap
         if base_score > 0.0:
-            boost = min(
-                boost,
-                self._dominance_ratio * base_score,
-            )
+            boost = min(boost, self._dominance_ratio * base_score)
 
         return boost
 
@@ -101,29 +84,33 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if not suggestions:
             return []
 
-        counts = self.history.counts_for_prefix(prefix)
+        counts = self._history.counts_for_prefix(prefix)
+
+        # Invariant: no signal => preserve order
         if not counts:
             return list(suggestions)
 
-        adjusted: list[tuple[float, ScoredSuggestion]] = []
+        adjusted: list[tuple[float, int, ScoredSuggestion]] = []
 
-        for s in suggestions:
+        for idx, s in enumerate(suggestions):
             count = counts.get(s.suggestion.value, 0)
             boost = self._history_boost(
                 count=count,
                 base_score=s.score,
             )
-            adjusted.append((s.score + boost, s))
+            adjusted.append((s.score + boost, idx, s))
 
-        adjusted.sort(key=lambda t: t[0], reverse=True)
-        return [s for _, s in adjusted]
+        # Stable sort: score desc, original order as tie-breaker
+        adjusted.sort(key=lambda t: (-t[0], t[1]))
+
+        return [s for _, _, s in adjusted]
 
     def explain(
         self,
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        counts = self.history.counts_for_prefix(prefix)
+        counts = self._history.counts_for_prefix(prefix)
 
         explanations: list[RankingExplanation] = []
 
