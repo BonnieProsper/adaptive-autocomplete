@@ -77,3 +77,13 @@ class RankingExplanation:
             final_score=self.base_score + self.history_boost + boost,
             source=self.source,
         )
+
+
+    def short_summary(self) -> str:
+        return (
+            f"{self.value}: "
+            f"base={self.base_score:.2f}, "
+            f"history={self.history_boost:.2f}, "
+            f"final={self.final_score:.2f}"
+        )
+
