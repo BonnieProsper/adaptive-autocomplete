@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -15,14 +14,17 @@ class LearningRanker(Ranker, LearnsFromHistory):
     Ranker that adapts suggestion ordering based on user selection history.
 
     Learning model:
-    - Historical counts produce additive score boosts
-    - Boosts are bounded to prevent runaway dominance
-    - No signal => original order preserved
+    - Linear boost: count * boost
+    - Optional dominance bounding to prevent runaway effects
+
+    This ranker is intentionally simple, deterministic, and fully explainable.
+    More advanced time-based or non-linear learning is handled by DecayRanker.
 
     Invariants:
-    - Pure: does not mutate history or suggestions
-    - Stable: preserves order without history
-    - Additive: learning never suppresses suggestions
+    - No history signal => original order preserved
+    - Learning is additive (never suppresses)
+    - Learning influence is bounded
+    - Does not mutate input suggestions or history
     """
 
     def __init__(
@@ -39,44 +41,30 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if dominance_ratio < 0.0:
             raise ValueError("dominance_ratio must be non-negative")
 
-        # Required by LearnsFromHistory:
-        # history must be a public, writable attribute
+        # Required by LearnsFromHistory: must be a public attribute
         self.history: History = history
 
         self._boost = boost
         self._dominance_ratio = dominance_ratio
 
-        # config is intentionally unused for now
-        # Phase 5 will wire structured config cleanly
+        # config intentionally unused (future extension point)
 
     # --- learning internals ---
 
-    def _decayed_count(self, count: int) -> float:
-        """
-        Apply exponential decay to a raw count.
-
-        Prevents runaway growth while still rewarding
-        repeated selections.
-        """
-        if count <= 0:
-            return 0.0
-
-        return count * math.exp(-0.5 * count)
-
     def _history_boost(self, *, count: int, base_score: float) -> float:
         """
-        Compute a bounded learning boost.
+        Compute a bounded linear learning boost.
 
-        Bounding strategy:
-        - Decayed count signal
-        - Global boost weight
-        - Relative dominance cap
+        Formula:
+            boost = count * self._boost
+
+        Bounding:
+        - Relative dominance cap based on base score
         """
         if count <= 0:
             return 0.0
 
-        decayed = self._decayed_count(count)
-        boost = decayed * self._boost
+        boost = count * self._boost
 
         if base_score > 0.0:
             boost = min(boost, self._dominance_ratio * base_score)
@@ -95,7 +83,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         counts = self.history.counts_for_prefix(prefix)
 
-        # Invariant: no signal => preserve order
+        # Invariant: no signal => preserve original order
         if not counts:
             return list(suggestions)
 
@@ -109,7 +97,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
             )
             adjusted.append((s.score + boost, idx, s))
 
-        # Stable sort: score desc, original order tie-break
+        # Stable sort: score desc, original order as tie-break
         adjusted.sort(key=lambda t: (-t[0], t[1]))
 
         return [s for _, _, s in adjusted]
