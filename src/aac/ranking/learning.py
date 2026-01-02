@@ -29,10 +29,9 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
     def __init__(
         self,
-        *,
         history: History,
-        config: EngineConfig,
-        max_boost: float | None = None,
+        *,
+        boost: float = 1.0,
         dominance_ratio: float = 1.0,
     ) -> None:
         if max_boost is not None and max_boost < 0.0:
@@ -43,7 +42,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         self.history = history
         self._config = config
-        self._max_boost = max_boost
+        self._boost = max_boost
         self._dominance_ratio = dominance_ratio
 
     def _decayed_count(self, count: int) -> float:
