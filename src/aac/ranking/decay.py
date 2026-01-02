@@ -38,7 +38,7 @@ class DecayFunction:
         if elapsed <= 0:
             return 1.0
 
-        return 0.5 ** (elapsed / self.half_life_seconds)
+        return float(0.5 ** (elapsed / self.half_life_seconds))
 
 
 def utcnow() -> datetime:
