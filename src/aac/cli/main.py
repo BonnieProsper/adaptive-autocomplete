@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from aac.config import EngineConfig
 from aac.domain.history import History
 from aac.domain.types import WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
@@ -16,7 +17,11 @@ DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 DEFAULT_LIMIT = 10
 
 
-def build_engine(history: History) -> AutocompleteEngine:
+def build_engine(
+    *,
+    history: History,
+    config: EngineConfig,
+) -> AutocompleteEngine:
     """
     Construct the autocomplete engine.
 
@@ -35,7 +40,10 @@ def build_engine(history: History) -> AutocompleteEngine:
                 weight=1.0,
             ),
         ],
-        ranker=LearningRanker(history),
+        ranker=LearningRanker(
+            history=history,
+            config=config,
+        ),
         history=history,
     )
 
@@ -83,12 +91,18 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Persistence boundary 
+    # Persistence boundary
     store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
     history = store.load()
 
-    # Engine construction 
-    engine = build_engine(history)
+    # Engine configuration (Phase 5.1)
+    config = EngineConfig()
+
+    # Engine construction
+    engine = build_engine(
+        history=history,
+        config=config,
+    )
 
     if args.command == "suggest":
         handle_suggest(
