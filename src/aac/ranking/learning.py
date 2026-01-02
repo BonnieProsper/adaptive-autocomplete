@@ -31,6 +31,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         *,
         boost: float = 1.0,
         dominance_ratio: float = 1.0,
+        config: object | None = None,  # accepted for forward compatibility
     ) -> None:
         if boost < 0.0:
             raise ValueError("boost must be non-negative")
@@ -42,17 +43,33 @@ class LearningRanker(Ranker, LearnsFromHistory):
         self._boost = boost
         self._dominance_ratio = dominance_ratio
 
+        # config is intentionally unused for now
+        # Phase 5 will wire structured config cleanly
+
+    # --- required by LearnsFromHistory ---
+
+    @property
+    def history(self) -> History:
+        """
+        Exposes the shared history instance.
+
+        Required by LearnsFromHistory so the engine
+        can enforce a single source of truth.
+        """
+        return self._history
+
+    # --- learning internals ---
+
     def _decayed_count(self, count: int) -> float:
         """
         Apply exponential decay to a raw count.
 
-        This prevents runaway growth while still
-        rewarding repeated selection.
+        Prevents runaway growth while still rewarding
+        repeated selections.
         """
         if count <= 0:
             return 0.0
 
-        # Simple, explainable decay
         return count * math.exp(-0.5 * count)
 
     def _history_boost(self, *, count: int, base_score: float) -> float:
@@ -70,11 +87,12 @@ class LearningRanker(Ranker, LearnsFromHistory):
         decayed = self._decayed_count(count)
         boost = decayed * self._boost
 
-        # Relative dominance cap
         if base_score > 0.0:
             boost = min(boost, self._dominance_ratio * base_score)
 
         return boost
+
+    # --- ranking ---
 
     def rank(
         self,
@@ -100,10 +118,12 @@ class LearningRanker(Ranker, LearnsFromHistory):
             )
             adjusted.append((s.score + boost, idx, s))
 
-        # Stable sort: score desc, original order as tie-breaker
+        # Stable sort: score desc, original order tie-break
         adjusted.sort(key=lambda t: (-t[0], t[1]))
 
         return [s for _, _, s in adjusted]
+
+    # --- explanation ---
 
     def explain(
         self,
