@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
+from aac.config import EngineConfig
 from aac.domain.history import History
 from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
@@ -14,41 +16,25 @@ class LearningRanker(Ranker, LearnsFromHistory):
     Ranker that adapts suggestion ordering based on user selection history.
 
     Learning model:
-    - Raw boost = selection_count * weight
-    - Boost is bounded to prevent dominance over base relevance
+    - Historical counts are exponentially decayed
+    - Learning is gated by a minimum sample threshold
+    - Boost is bounded (absolute + relative dominance)
 
     Invariants:
     - No history signal => original order preserved
     - Learning is additive (never suppresses)
-    - Learning influence is bounded (absolute + relative)
+    - Learning influence is bounded
     - Does not mutate input suggestions
     """
 
     def __init__(
         self,
-        history: History,
-        weight: float = 1.0,
         *,
-        boost: float | None = None,
+        history: History,
+        config: EngineConfig,
         max_boost: float | None = None,
         dominance_ratio: float = 1.0,
     ) -> None:
-        """
-        Parameters:
-        - history: shared selection history (single source of truth)
-        - weight: canonical learning strength
-        - boost: public alias for weight (API compatibility)
-        - max_boost: absolute upper bound on learning influence (optional)
-        - dominance_ratio: relative cap as a fraction of base score
-            e.g 1.0 => learning ≤ 100% of base relevance
-        """
-        if boost is not None:
-            if weight != 1.0:
-                raise ValueError(
-                    "Specify only one of 'weight' or 'boost', not both"
-                )
-            weight = boost
-
         if max_boost is not None and max_boost < 0.0:
             raise ValueError("max_boost must be non-negative")
 
@@ -56,35 +42,55 @@ class LearningRanker(Ranker, LearnsFromHistory):
             raise ValueError("dominance_ratio must be non-negative")
 
         self.history = history
-        self._weight = weight
+        self._config = config
         self._max_boost = max_boost
         self._dominance_ratio = dominance_ratio
 
-    def _history_boost(self, count: int, base_score: float) -> float:
+    def _decayed_count(self, count: int) -> float:
         """
-        Compute a bounded learning boost.
+        Apply exponential decay to a raw count.
 
-        Bounding strategy:
-        - Linear raw learning signal
-        - Optional absolute cap
-        - Relative cap based on base relevance
+        Decay formula:
+            decayed = count * exp(-decay_rate * count)
 
-        This guarantees learning can never dominate relevance.
+        This:
+        - rewards recent repetition
+        - prevents runaway growth
         """
         if count <= 0:
             return 0.0
 
-        # Raw learning signal
-        boost = count * self._weight
+        return count * math.exp(
+            -self._config.decay_rate * count
+        )
 
-        # Absolute cap (if configured)
+    def _history_boost(self, *, count: int, base_score: float) -> float:
+        """
+        Compute a bounded learning boost.
+
+        Bounding strategy:
+        - Minimum sample gate
+        - Decayed linear signal
+        - Global history weight
+        - Optional absolute cap
+        - Relative dominance cap
+        """
+        if count < self._config.min_samples:
+            return 0.0
+
+        decayed = self._decayed_count(count)
+        boost = decayed * self._config.history_weight
+
+        # Absolute cap
         if self._max_boost is not None:
             boost = min(boost, self._max_boost)
 
-        # Relative cap (dominance bound)
+        # Relative dominance cap
         if base_score > 0.0:
-            relative_cap = self._dominance_ratio * base_score
-            boost = min(boost, relative_cap)
+            boost = min(
+                boost,
+                self._dominance_ratio * base_score,
+            )
 
         return boost
 
@@ -104,7 +110,10 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            boost = self._history_boost(count, s.score)
+            boost = self._history_boost(
+                count=count,
+                base_score=s.score,
+            )
             adjusted.append((s.score + boost, s))
 
         adjusted.sort(key=lambda t: t[0], reverse=True)
@@ -121,7 +130,10 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            boost = self._history_boost(count, s.score)
+            boost = self._history_boost(
+                count=count,
+                base_score=s.score,
+            )
 
             explanations.append(
                 RankingExplanation(
@@ -141,11 +153,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[dict[str, float | str]]:
         """
-        Export ranking explanations in a JSON-safe, stable schema.
-
-        NOTE:
-        - Public contract
-        - Internal mechanics intentionally excluded
+        Export ranking explanations in a JSON-safe schema.
         """
         return [
             {
