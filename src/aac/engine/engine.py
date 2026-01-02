@@ -27,9 +27,9 @@ class AutocompleteEngine:
     Architectural invariants:
     - Engine owns the CompletionContext lifecycle
     - Internally everything operates on ScoredSuggestion
-    - Rankers must not add/remove suggestions
+    - Rankers must not add or remove suggestions
     - Scores must remain finite
-    - Explanation final scores must reconcile with suggestion scores
+    - Explanation final scores must reconcile with ranking scores
     - Projection to Suggestion happens only at API boundaries
     - History has a single source of truth
     """
@@ -113,10 +113,12 @@ class AutocompleteEngine:
         return list(aggregated.values())
 
     def _apply_ranking(
-        self, ctx: CompletionContext, scored: list[ScoredSuggestion]
+        self,
+        ctx: CompletionContext,
+        scored: list[ScoredSuggestion],
     ) -> list[ScoredSuggestion]:
         """
-        Apply all rankers with enforced architectural invariants.
+        Apply all rankers while enforcing architectural invariants.
         """
         ranked = scored
         original_ids = {id(s) for s in ranked}
@@ -162,7 +164,7 @@ class AutocompleteEngine:
         """
         Public API: explain how suggestions were ranked.
 
-        Aggregates explanations across all rankers while preserving
+        Explanations are aggregated across all rankers while preserving
         final ranked order.
         """
         ctx = CompletionContext(text)
@@ -176,7 +178,9 @@ class AutocompleteEngine:
                 if exp.value not in aggregated:
                     aggregated[exp.value] = exp
                 else:
-                    aggregated[exp.value].merge(exp)
+                    # IMPORTANT:
+                    # RankingExplanation.merge() returns a NEW instance.
+                    aggregated[exp.value] = aggregated[exp.value].merge(exp)
 
         return [
             aggregated[s.suggestion.value]
@@ -201,6 +205,10 @@ class AutocompleteEngine:
     def record_selection(self, text: str, value: str) -> None:
         """
         Records user feedback for learning.
+
+        This:
+        - updates global history
+        - forwards signals to predictors that support learning
         """
         ctx = CompletionContext(text)
         self._history.record(ctx.text, value)
@@ -212,7 +220,9 @@ class AutocompleteEngine:
 
     def debug_pipeline(self, text: str) -> None:
         """
-        Prints full prediction, ranking, and learning pipeline for debugging.
+        Prints the full prediction, ranking, and learning pipeline.
+
+        Intended for development and debugging only.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
@@ -221,16 +231,18 @@ class AutocompleteEngine:
         print("=== PREDICTION PHASE ===")
         for s in scored:
             print(
-                f"{s.suggestion.value}: score={s.score:.2f}, trace={s.trace}"
+                f"{s.suggestion.value}: "
+                f"score={s.score:.2f}, trace={s.trace}"
             )
 
         print("\n=== RANKING PHASE ===")
         for ranker in self._rankers:
-            explanations = ranker.explain(ctx.text, ranked)
-            for e in explanations:
+            for e in ranker.explain(ctx.text, ranked):
                 print(
-                    f"{e.value}: base={e.base_score:.2f}, "
-                    f"history={e.history_boost:.2f}, final={e.final_score:.2f}, "
+                    f"{e.value}: "
+                    f"base={e.base_score:.2f}, "
+                    f"history={e.history_boost:.2f}, "
+                    f"final={e.final_score:.2f}, "
                     f"source={e.source}"
                 )
 
