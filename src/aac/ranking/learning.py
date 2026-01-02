@@ -39,24 +39,15 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if dominance_ratio < 0.0:
             raise ValueError("dominance_ratio must be non-negative")
 
-        self._history = history
+        # Required by LearnsFromHistory:
+        # history must be a public, writable attribute
+        self.history: History = history
+
         self._boost = boost
         self._dominance_ratio = dominance_ratio
 
         # config is intentionally unused for now
         # Phase 5 will wire structured config cleanly
-
-    # --- required by LearnsFromHistory ---
-
-    @property
-    def history(self) -> History:
-        """
-        Exposes the shared history instance.
-
-        Required by LearnsFromHistory so the engine
-        can enforce a single source of truth.
-        """
-        return self._history
 
     # --- learning internals ---
 
@@ -102,7 +93,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if not suggestions:
             return []
 
-        counts = self._history.counts_for_prefix(prefix)
+        counts = self.history.counts_for_prefix(prefix)
 
         # Invariant: no signal => preserve order
         if not counts:
@@ -130,7 +121,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        counts = self._history.counts_for_prefix(prefix)
+        counts = self.history.counts_for_prefix(prefix)
 
         explanations: list[RankingExplanation] = []
 
