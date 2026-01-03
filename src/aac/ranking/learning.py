@@ -95,7 +95,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
                 count=count,
                 base_score=s.score,
             )
-            adjusted.append((s.score + boost, idx, s))
+            adjusted.append((s.score + boost, idx, s)) # TODO: duplicates logic with explain(), keep anyway
 
         # Stable sort: score desc, original order as tie-break
         adjusted.sort(key=lambda t: (-t[0], t[1]))
