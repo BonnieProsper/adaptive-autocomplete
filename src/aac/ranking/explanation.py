@@ -47,13 +47,16 @@ class RankingExplanation:
         if self.value != other.value:
             raise ValueError("Cannot merge explanations for different values")
 
+        base = self.base_score + other.base_score
+        history = self.history_boost + other.history_boost
         return RankingExplanation(
             value=self.value,
-            base_score=self.base_score + other.base_score,
-            history_boost=self.history_boost + other.history_boost,
-            final_score=self.final_score + other.final_score,
+            base_score=base,
+            history_boost=history,
+            final_score=base + history,
             source=self.source,
         )
+
 
     @staticmethod
     def from_predictor(
