@@ -1,3 +1,11 @@
+# TODO: debug_pipeline shouldnt be part of public engine (move to private helper/cli debug utility)
+# complete()/predict() duplication - mark one as legacy or delete?
+# history forwarding to predictors is implicit - document this in readme
+# e.g 
+# State that predictor learning is optional
+# Explain the duck-typed record(ctx, value) hook
+# Emphasize that learning is not required
+
 from __future__ import annotations
 
 import math
