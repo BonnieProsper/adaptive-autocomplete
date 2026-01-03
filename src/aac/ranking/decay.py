@@ -12,9 +12,9 @@ from aac.ranking.contracts import LearnsFromHistory
 from aac.ranking.explanation import RankingExplanation
 
 
-# -----------------------------
+
 # Decay function moved from domain
-# -----------------------------
+
 @dataclass(frozen=True)
 class DecayFunction:
     """
