@@ -1,3 +1,7 @@
+# TODO
+# In README: State that EngineConfig defines global learning policy
+# Explain that current rankers accept config for future extension
+# Make it explicit that today, only explicit constructor args are used
 from dataclasses import dataclass
 
 
