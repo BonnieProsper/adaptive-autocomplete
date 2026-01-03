@@ -1,4 +1,3 @@
-# TODO: fix merge()
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
