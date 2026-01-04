@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
+    Predictor,
     PredictorExplanation,
     ScoredSuggestion,
     Suggestion,
