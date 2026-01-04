@@ -1,5 +1,6 @@
 # TODO Extend later, add pipelines etc
 # TO ADD: --preset developer, --predictor trie, --debug trace, live completion etc
+# TODO: vocab is hardcoded, no clear mode seperation, too much wiring logic
 from __future__ import annotations
 
 import argparse
