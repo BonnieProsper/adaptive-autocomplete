@@ -1,11 +1,3 @@
-# TODO: debug_pipeline shouldnt be part of public engine (move to private helper/cli debug utility)
-# complete()/predict() duplication - mark one as legacy or delete?
-# history forwarding to predictors is implicit - document this in readme
-# e.g 
-# State that predictor learning is optional
-# Explain the duck-typed record(ctx, value) hook
-# Emphasize that learning is not required
-
 from __future__ import annotations
 
 import math
@@ -229,34 +221,6 @@ class AutocompleteEngine:
             record = getattr(weighted.predictor, "record", None)
             if callable(record):
                 record(ctx, value)
-
-    def debug_pipeline(self, text: str) -> None:
-        """
-        Prints the full prediction, ranking, and learning pipeline.
-
-        Intended for development and debugging only.
-        """
-        ctx = CompletionContext(text)
-        scored = self._score(ctx)
-        ranked = self._apply_ranking(ctx, scored)
-
-        print("=== PREDICTION PHASE ===")
-        for s in scored:
-            print(
-                f"{s.suggestion.value}: "
-                f"score={s.score:.2f}, trace={s.trace}"
-            )
-
-        print("\n=== RANKING PHASE ===")
-        for ranker in self._rankers:
-            for e in ranker.explain(ctx.text, ranked):
-                print(
-                    f"{e.value}: "
-                    f"base={e.base_score:.2f}, "
-                    f"history={e.history_boost:.2f}, "
-                    f"final={e.final_score:.2f}, "
-                    f"source={e.source}"
-                )
 
     @property
     def history(self) -> History:
