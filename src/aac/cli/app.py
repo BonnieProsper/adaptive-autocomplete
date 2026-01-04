@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from aac.config import EngineConfig
 from aac.domain.history import History
-from aac.domain.types import WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
 from aac.pipelines.developer import build_developer_pipeline
 from aac.ranking.learning import LearningRanker

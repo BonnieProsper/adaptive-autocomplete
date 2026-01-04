@@ -3,11 +3,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from aac.config import EngineConfig
-from aac.domain.history import History
-from aac.storage.json_store import JsonHistoryStore
+from aac.cli import debug, explain, record, suggest
 from aac.cli.app import build_engine
-from aac.cli import suggest, explain, record, debug
+from aac.config import EngineConfig
+from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 DEFAULT_LIMIT = 10
