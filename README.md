@@ -24,6 +24,7 @@ The system distinguishes between:
 
 This prevents accidental mix-ups between prediction and ranking logic
 and allows explanations to remain truthful as the system evolves.
+Explanations describe the final ranking, not raw predictor output.
 
 Immutability at Boundaries:
 
