@@ -74,7 +74,17 @@ The following methods are considered stable and safe for external use:
 
 All other methods and attributes are considered internal and could change without notice.
 
+Semi-internal:
 
+- complete(ctx)
+- explain_as_dicts(text)
+
+Non-public/dev-only:
+
+- predict(ctx)
+- debug_pipeline()
+
+  
 ## Design Scaling
 
 This system is intentionally designed to scale beyond autocomplete.
