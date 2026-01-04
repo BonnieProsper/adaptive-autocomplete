@@ -164,9 +164,13 @@ class AutocompleteEngine:
 
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Backwards-compatible API used by invariant tests.
+        Legacy alias for complete().
+    
+        Kept for backward compatibility with existing tests.
+        Not part of the public API.
         """
         return self.complete(ctx)
+
 
     def explain(self, text: str) -> list[RankingExplanation]:
         """
