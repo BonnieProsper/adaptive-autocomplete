@@ -1,6 +1,3 @@
-# TODO Extend later, add pipelines etc
-# TO ADD: --preset developer, --predictor trie, --debug trace, live completion etc
-# TODO: vocab is hardcoded, no clear mode seperation, too much wiring logic
 from __future__ import annotations
 
 import argparse
@@ -8,45 +5,12 @@ from pathlib import Path
 
 from aac.config import EngineConfig
 from aac.domain.history import History
-from aac.domain.types import WeightedPredictor
-from aac.engine.engine import AutocompleteEngine
-from aac.predictors.static_prefix import StaticPrefixPredictor
-from aac.ranking.learning import LearningRanker
 from aac.storage.json_store import JsonHistoryStore
+from aac.cli.app import build_engine
+from aac.cli import suggest, explain, record, debug
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
 DEFAULT_LIMIT = 10
-
-
-def build_engine(
-    *,
-    history: History,
-    config: EngineConfig,
-) -> AutocompleteEngine:
-    """
-    Construct the autocomplete engine.
-
-    Intentionally explicit:
-    - predictable behavior
-    - testable construction
-    - mirrors production usage
-    - predictor weights are first-class
-    """
-    return AutocompleteEngine(
-        predictors=[
-            WeightedPredictor(
-                predictor=StaticPrefixPredictor(
-                    vocabulary=["hello", "help", "helium", "hero"],
-                ),
-                weight=1.0,
-            ),
-        ],
-        ranker=LearningRanker(
-            history=history,
-            config=config,
-        ),
-        history=history,
-    )
 
 
 def main() -> None:
@@ -57,64 +21,40 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # suggest
-    suggest = subparsers.add_parser(
-        "suggest",
-        help="Generate autocomplete suggestions",
-    )
-    suggest.add_argument("text", type=str)
-    suggest.add_argument(
-        "--limit",
-        type=int,
-        default=DEFAULT_LIMIT,
-        help="Maximum number of suggestions to display",
-    )
-    suggest.add_argument(
-        "--explain",
-        action="store_true",
-        help="Show scoring explanations instead of plain suggestions",
-    )
+    suggest_p = subparsers.add_parser("suggest")
+    suggest_p.add_argument("text")
+    suggest_p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
 
-    # select
-    select = subparsers.add_parser(
-        "select",
-        help="Record a user selection for learning",
-    )
-    select.add_argument("text", type=str)
-    select.add_argument("value", type=str)
+    explain_p = subparsers.add_parser("explain")
+    explain_p.add_argument("text")
+    explain_p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
 
-    # debug
-    debug = subparsers.add_parser(
-        "debug",
-        help="Show full prediction and ranking pipeline (developer tool)",
-    )
-    debug.add_argument("text", type=str)
+    record_p = subparsers.add_parser("record")
+    record_p.add_argument("text")
+    record_p.add_argument("value")
+
+    debug_p = subparsers.add_parser("debug")
+    debug_p.add_argument("text")
 
     args = parser.parse_args()
 
-    # Persistence boundary
     store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
     history = store.load()
 
-    # Engine configuration (Phase 5.1)
-    config = EngineConfig()
-
-    # Engine construction
     engine = build_engine(
         history=history,
-        config=config,
+        config=EngineConfig(),
+        preset="developer",
     )
 
     if args.command == "suggest":
-        handle_suggest(
-            engine=engine,
-            text=args.text,
-            limit=args.limit,
-            explain=args.explain,
-        )
+        suggest.run(engine=engine, text=args.text, limit=args.limit)
 
-    elif args.command == "select":
-        handle_select(
+    elif args.command == "explain":
+        explain.run(engine=engine, text=args.text, limit=args.limit)
+
+    elif args.command == "record":
+        record.run(
             engine=engine,
             store=store,
             text=args.text,
@@ -122,47 +62,4 @@ def main() -> None:
         )
 
     elif args.command == "debug":
-        engine.debug_pipeline(args.text)
-
-
-def handle_suggest(
-    engine: AutocompleteEngine,
-    text: str,
-    limit: int,
-    explain: bool,
-) -> None:
-    """
-    Suggest completions for a given input.
-
-    Read-only operation:
-    - does not mutate history
-    - does not persist state
-    """
-    if explain:
-        explanations = engine.explain(text)[:limit]
-        for exp in explanations:
-            print(
-                f"{exp.value:12} "
-                f"base={exp.base_score:.2f} "
-                f"+ history={exp.history_boost:.2f} "
-                f"=> {exp.final_score:.2f}"
-            )
-        return
-
-    suggestions = engine.suggest(text)[:limit]
-    for suggestion in suggestions:
-        print(suggestion.value)
-
-
-def handle_select(
-    engine: AutocompleteEngine,
-    store: JsonHistoryStore,
-    text: str,
-    value: str,
-) -> None:
-    """
-    Record a user selection and persist learning state.
-    """
-    engine.record_selection(text, value)
-    store.save(engine.history)
-    print(f"Recorded selection '{value}' for input '{text}'")
+        debug.run(engine=engine, text=args.text)
