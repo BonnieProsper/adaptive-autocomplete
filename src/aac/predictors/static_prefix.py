@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
+    Predictor,
     PredictorExplanation,
     ScoredSuggestion,
     Suggestion,
