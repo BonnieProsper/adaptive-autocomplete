@@ -98,7 +98,7 @@ class AutocompleteEngine:
                 weighted_score = scored.score * weighted.weight
 
                 trace_entry = (
-                    f"Predictor={weighted.predictor.__class__.__name__}, "
+                    f"Predictor={weighted.predictor.name}, "
                     f"weight={weighted.weight}, raw_score={scored.score}"
                 )
 
