@@ -109,6 +109,9 @@ Weighted Components:
 
 Predictors and rankers may be wrapped with weights
 to influence their relative impact without modifying logic.
+e.g
+Predictors may optionally be wrapped in WeightedPredictor.
+Unweighted predictors default to weight=1.0.
 
 
 ## Stability Guarantees
