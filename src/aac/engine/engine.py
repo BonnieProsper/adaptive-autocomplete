@@ -12,9 +12,9 @@ import math
 from collections.abc import Sequence
 
 from aac.domain.history import History
-from aac.domain.predictor import Predictor
 from aac.domain.types import (
     CompletionContext,
+    Predictor,
     ScoredSuggestion,
     Suggestion,
     WeightedPredictor,
