@@ -163,3 +163,11 @@ This project intentionally does not aim to:
 - No large-scale indexing structures
 - Predictors are hand-written, not learned
 - No domain-specific tuning out of the box
+
+
+## CLI CONTRACT/DEMO
+
+aac suggest <text>        # fast, clean, scriptable
+aac explain <text>        # explicit explainability
+aac record <text> <val>   # learning
+aac debug <text>          # developer-only trace

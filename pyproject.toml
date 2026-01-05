@@ -19,7 +19,7 @@ mypy = "^1.11.1"
 types-setuptools = "^71.1.0"
 
 [tool.poetry.scripts]
-aac = "aac.cli.app:app"
+aac = "aac.cli.main:main"
 
 [tool.ruff]
 target-version = "py310"
