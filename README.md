@@ -1,4 +1,4 @@
-## Adaptive Autocomplete Core (AAC)
+# Adaptive Autocomplete Core (AAC)
 
 AAC is a modular, explainable autocomplete and ranking engine designed as a production-grade backend system.
 
@@ -6,7 +6,7 @@ The project focuses on architecture, correctness, and extensibility over feature
 
 This repository is intentionally scoped and opinionated. Every design decision exists to make the system easier to reason about, extend, and audit.
 
-## High-level architecture
+# High-level architecture
 
 AAC is structured as a layered pipeline with explicit responsibilities and invariants:
 
@@ -20,7 +20,7 @@ User Input
 
 Each stage is isolated. No layer reaches across boundaries or performs hidden work.
 
-## Design principles
+# Design principles
 
 ## Single source of truth
 
@@ -59,8 +59,8 @@ Core domain objects are immutable:
 
 Rankers return new orderings rather than mutating input. This encourages determinism, safe composition, and predictable behavior under extension.
 
-## Component responsibilities
-# Predictors
+# Component responsibilities
+## Predictors
 
 Predictors are independent signal generators. They:
 
@@ -72,7 +72,7 @@ Predictors are independent signal generators. They:
 
 Examples include prefix matchers, trie-based lookups, frequency biasing, or history-based intent signals.
 
-# Engine
+## Engine
 
 The AutocompleteEngine orchestrates the entire pipeline. It:
 
@@ -84,7 +84,7 @@ The AutocompleteEngine orchestrates the entire pipeline. It:
 
 The engine contains no domain-specific logic, only coordination and validation.
 
-# Rankers
+## Rankers
 
 Rankers are responsible for ordering and optional learning. They:
 
@@ -96,7 +96,7 @@ Rankers are responsible for ordering and optional learning. They:
 
 Rankers are composable and applied sequentially.
 
-# Explanations
+## Explanations
 
 Explanations are:
 
@@ -107,7 +107,7 @@ Explanations are:
 
 This makes the system suitable for developer tooling, debugging, and API consumption.
 
-# Public API
+## Public API
 
 The following engine methods are considered stable:
 
@@ -117,7 +117,7 @@ The following engine methods are considered stable:
 - AutocompleteEngine.record_selection(text: str, value: str)
 - AutocompleteEngine.history  # read-only
 
-Semi-internal
+Semi-internal:
 
 - complete(ctx) — lower-level scoring API
 
@@ -128,7 +128,7 @@ Internal/developer-only
 
 Only documented methods should be used by external consumers.
 
-# CLI
+## CLI
 
 AAC includes a minimal CLI to demonstrate usability and integration.
 
@@ -142,11 +142,11 @@ aac debug pri
 
 The CLI is intentionally thin and delegates all logic to the core engine.
 
-## Extension points
+# Extension points
 
 AAC is designed to grow without modification to existing components.
 
-# Custom predictors
+## Custom predictors
 
 To add a predictor, implement the Predictor protocol:
 
@@ -154,7 +154,7 @@ To add a predictor, implement the Predictor protocol:
 - Avoid shared mutable state
 - Emit PredictorExplanation when possible
 
-# Custom rankers
+## Custom rankers
 
 To add a ranker:
 
@@ -163,11 +163,11 @@ To add a ranker:
 - Do not add or remove suggestions
 - Optionally implement history-based learning
 
-# Weighted composition
+## Weighted composition
 
 Predictors and rankers can be weighted externally (e.g WeightedPredictor) to tune influence without modifying internal logic.
 
-## Stability guarantees
+# Stability guarantees
 
 This project follows explicit stability rules:
 
@@ -178,7 +178,7 @@ This project follows explicit stability rules:
 
 These guarantees make the system safe to extend and reason about.
 
-## Design scaling
+# Design scaling
 
 The system is intentionally generic and domain-agnostic. Although demonstrated as an autocomplete engine, the same architecture supports:
 
@@ -187,7 +187,7 @@ The system is intentionally generic and domain-agnostic. Although demonstrated a
 - Query completion
 - Hybrid ML + heuristic ranking
 
-## Non-goals
+# Non-goals
 
 Clarity, correctness, and explainability are prioritized over raw performance. This project intentionally does not aim to:
 
@@ -197,14 +197,14 @@ Clarity, correctness, and explainability are prioritized over raw performance. T
 - Compete with large-scale search engines
 
 
-## Tradeoffs
+# Tradeoffs
 
 - Clarity over performance: explicit wiring and invariants are favored over micro-optimizations
 - Determinism over stochastic models: no randomness or opaque ML
 - Explicit learning: learning signals are bounded and optional
 
 
-## Current limitations
+# Current limitations
 
 - History persistence is simple and file-based
 - No batching or streaming APIs
