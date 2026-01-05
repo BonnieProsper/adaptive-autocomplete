@@ -11,34 +11,38 @@ def build_engine(
     *,
     history: History,
     config: EngineConfig,
-    preset: str = "developer",
 ) -> AutocompleteEngine:
     """
-    Construct an AutocompleteEngine.
+    Construct the default CLI engine.
 
-    Presets define predictor composition and weighting.
-    This mirrors how a production system would expose modes.
+    This uses the developer pipeline:
+    - prefix matching
+    - trie-based completion
+    - history-based learning
+    - global frequency bias
     """
-    if preset == "developer":
-        predictors = build_developer_pipeline(
-            vocabulary=[
-                "print",
-                "private",
-                "priority",
-                "import",
-                "class",
-                "def",
-            ],
-            history=history,
-        )
-    else:
-        raise ValueError(f"Unknown preset: {preset}")
+
+    predictors = build_developer_pipeline(
+        vocabulary=[
+            # demo-safe vocabulary (will be replaced later)
+            "hello",
+            "help",
+            "helium",
+            "hero",
+            "heap",
+            "hex",
+            "height",
+        ],
+        history=history,
+    )
+
+    ranker = LearningRanker(
+        history=history,
+        config=config,
+    )
 
     return AutocompleteEngine(
         predictors=predictors,
-        ranker=LearningRanker(
-            history=history,
-            config=config,
-        ),
+        ranker=ranker,
         history=history,
     )
