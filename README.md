@@ -167,7 +167,7 @@ To add a ranker:
 
 Predictors and rankers can be weighted externally (e.g WeightedPredictor) to tune influence without modifying internal logic.
 
-# Stability guarantees
+## Stability guarantees
 
 This project follows explicit stability rules:
 
@@ -178,7 +178,7 @@ This project follows explicit stability rules:
 
 These guarantees make the system safe to extend and reason about.
 
-# Design scaling
+## Design scaling
 
 The system is intentionally generic and domain-agnostic. Although demonstrated as an autocomplete engine, the same architecture supports:
 
@@ -187,7 +187,7 @@ The system is intentionally generic and domain-agnostic. Although demonstrated a
 - Query completion
 - Hybrid ML + heuristic ranking
 
-# Non-goals
+## Non-goals
 
 Clarity, correctness, and explainability are prioritized over raw performance. This project intentionally does not aim to:
 
@@ -197,14 +197,14 @@ Clarity, correctness, and explainability are prioritized over raw performance. T
 - Compete with large-scale search engines
 
 
-# Tradeoffs
+## Tradeoffs
 
 - Clarity over performance: explicit wiring and invariants are favored over micro-optimizations
 - Determinism over stochastic models: no randomness or opaque ML
 - Explicit learning: learning signals are bounded and optional
 
 
-# Current limitations
+## Current limitations
 
 - History persistence is simple and file-based
 - No batching or streaming APIs
