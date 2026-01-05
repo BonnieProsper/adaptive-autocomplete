@@ -1,173 +1,213 @@
-# adaptive-autocomplete
-A self-learning autocompleter that uses various methods to improve its text suggestions over time.
+# Adaptive Autocomplete Core (AAC)
+
+AAC is a modular, explainable autocomplete and ranking engine designed as a production-grade backend system.
+
+The project focuses on architecture, correctness, and extensibility over features, emphasising clear boundaries between signal generation, aggregation, ranking, learning, and explanation while remaining deterministic, testable, and inspectable.
+
+This repository is intentionally scoped and opinionated. Every design decision exists to make the system easier to reason about, extend, and audit.
+
+## High-level architecture
+
+AAC is structured as a layered pipeline with explicit responsibilities and invariants:
+
+User Input
+  → CompletionContext
+    → Predictors (raw signals)
+      → Weighted Aggregation
+        → Rankers (ordering + learning)
+          → Suggestions + Explanations
 
 
+Each stage is isolated. No layer reaches across boundaries or performs hidden work.
 
-## Architecture Overview
+# Design principles
 
-Autocomplete engine designed as a layered system that seperates signal generation, aggregation, ranking, learning, and explanation. Each layer has a single responsibility and explicit invariants, allowing the system to grow and evolve without accidental coupling or errors.
+## Single source of truth
 
-User Input -> CompletionContext -> Predictors (raw signals) -> Weighted Aggregation -> Rankers (ordering + learning) -> Suggestions + Explanations
-
-## Design Principles
-
-Single Source of Truth:
 - History is owned by the engine
-- Rankers can read or learn from history but don't own it
-- Predictors are stateless by default
+- Rankers may read from or learn from history, but do not own it
+- Predictors are stateless by default and never depend on global state
 
-Explanation Model:
+This prevents accidental coupling and makes learning behavior explicit.
 
-The system distinguishes between:
-- PredictorExplanation: raw unnormalized signals
-- RankingExplanation: final user-facing scoring rationale
+## Separation of prediction and ranking
 
-This prevents accidental mix-ups between prediction and ranking logic
-and allows explanations to remain truthful as the system evolves.
-Explanations describe the final ranking, not raw predictor output.
+The system explicitly distinguishes between:
 
-Immutability at Boundaries:
+- Prediction: generating candidate suggestions with raw scores
+- Ranking: ordering those candidates and applying learning or normalization
 
-- Core domain objects (Suggestion, ScoredSuggestion, CompletionContext)
-are immutable.
-- Rankers return new ordering, not mutated input, ensuring determinism
-and safe composition.
+Predictors never rank and rankers never generate suggestions.
+This separation allows each concern to evolve independently and remain testable.
 
-## Component Responsibilities
+## Explainability as a first-class invariant
 
-Predictors:
+AAC enforces a strict explanation model:
+
+- PredictorExplanation represents raw, unnormalized signals
+- RankingExplanation represents the final user-facing rationale
+
+Explanations always correspond to the final ranked output, not intermediate or discarded values. If a score exists, it can be explained.
+
+## Immutability at boundaries
+
+Core domain objects are immutable:
+
+- CompletionContext
+- Suggestion
+- ScoredSuggestion
+
+Rankers return new orderings rather than mutating input. This encourages determinism, safe composition, and predictable behavior under extension.
+
+# Component responsibilities
+## Predictors
+
+Predictors are independent signal generators. They:
 
 - Generate candidate suggestions
 - Assign raw scores
 - May optionally emit PredictorExplanation
-- Do not rank or learn
+- Do not rank, normalize, or learn
+- Must not mutate shared state
 
-Engine:
+Examples include prefix matchers, trie-based lookups, frequency biasing, or history-based intent signals.
 
-- Orchestrates the full pipeline
+## Engine
+
+The AutocompleteEngine orchestrates the entire pipeline. It:
+
+- Owns the lifecycle of CompletionContext and History
 - Aggregates and weights predictor output
 - Applies rankers sequentially
-- Owns the lifecycle of CompletionContext and History
+- Enforces architectural invariants
+- Exposes a minimal, stable public API
 
-Rankers:
+The engine contains no domain-specific logic, only coordination and validation.
 
-- Reorder suggestions
-- May apply learning or normalization
-- Must preserve scores and determinism
+## Rankers
 
-Explanations:
+Rankers are responsible for ordering and optional learning. They:
 
-- Always consistent with final ranking output
+- Reorder existing suggestions
+- Must not add or remove candidates
+- May apply learning, decay, or normalization
+- Must preserve determinism and finite scores
+- May read from history but do not own it
+
+Rankers are composable and applied sequentially.
+
+## Explanations
+
+Explanations are:
+
 - Aggregated across rankers
-- Exportable in JSON-safe form for APIs
+- Always consistent with final ranking
+- Exportable in JSON-safe form
+- Additive over time (no breaking removals)
 
+This makes the system suitable for developer tooling, debugging, and API consumption.
 
 ## Public API
 
-The following methods are considered stable and safe for external use:
+The following engine methods are considered stable:
 
 - AutocompleteEngine.suggest(text: str) -> list[Suggestion]
 - AutocompleteEngine.explain(text: str) -> list[RankingExplanation]
 - AutocompleteEngine.explain_as_dicts(text: str) -> list[dict]
 - AutocompleteEngine.record_selection(text: str, value: str)
-- AutocompleteEngine.history (read-only)
-
-All other methods and attributes are considered internal and could change without notice.
+- AutocompleteEngine.history  # read-only
 
 Semi-internal:
 
-- complete(ctx)
-- explain_as_dicts(text)
+- complete(ctx) — lower-level scoring API
 
-Non-public/dev-only:
+Internal/developer-only
 
-- predict(ctx)
-- debug_pipeline()
+- predict(ctx) (legacy compatibility)
+- Debug and pipeline introspection utilities
 
-  
-## Design Scaling
+Only documented methods should be used by external consumers.
 
-This system is intentionally designed to scale beyond autocomplete.
+## CLI
 
-The same architecture supports:
+AAC includes a minimal CLI to demonstrate usability and integration.
+
+Examples:
+
+aac suggest pri
+aac explain pri
+aac record pri print
+aac debug pri
+
+
+The CLI is intentionally thin and delegates all logic to the core engine.
+
+# Extension points
+
+AAC is designed to grow without modification to existing components.
+
+## Custom predictors
+
+To add a predictor, implement the Predictor protocol:
+
+- Return ScoredSuggestion
+- Avoid shared mutable state
+- Emit PredictorExplanation when possible
+
+## Custom rankers
+
+To add a ranker:
+
+- Implement the Ranker interface
+- Preserve determinism
+- Do not add or remove suggestions
+- Optionally implement history-based learning
+
+## Weighted composition
+
+Predictors and rankers can be weighted externally (e.g WeightedPredictor) to tune influence without modifying internal logic.
+
+## Stability guarantees
+
+This project follows explicit stability rules:
+
+- Core domain types are stable once released
+- Public engine APIs are backward compatible
+- Internal helpers may change freely
+- Explanation fields are additive only
+
+These guarantees make the system safe to extend and reason about.
+
+## Design scaling
+
+The system is intentionally generic and domain-agnostic. Although demonstrated as an autocomplete engine, the same architecture supports:
+
 - Search ranking
-- Recommendation engines
+- Recommendation systems
 - Query completion
-- ML-backed ranking layers
+- Hybrid ML + heuristic ranking
 
-New predictors, rankers, or learning strategies can be introduced
-without modifying existing components.
+## Non-goals
 
-
-## Extension Points
-
-Custom predictors may be implemented by conforming to the Predictor protocol.
-
-Predictors:
-- Produce ScoredSuggestion
-- Must not mutate shared state
-- Should emit PredictorExplanation when possible
-
-Custom rankers must implement the Ranker interface.
-
-Rankers:
-- Operate on scored suggestions
-- Must preserve determinism
-- Must not strip scores or suggestions
-- May optionally learn from History
-
-Weighted Components:
-
-Predictors and rankers may be wrapped with weights
-to influence their relative impact without modifying logic.
-e.g
-Predictors may optionally be wrapped in WeightedPredictor.
-Unweighted predictors default to weight=1.0.
-
-
-## Stability Guarantees
-
-This project follows these stability rules:
-
-- Core domain types (Suggestion, ScoredSuggestion, CompletionContext)
-  are stable once released
-- Public engine methods are backward compatible
-- Internal helper methods may change freely
-- Explanation fields are additive only (no breaking removals)
-
-
-## Non-Goals
-
-This project intentionally does not aim to:
+Clarity, correctness, and explainability are prioritized over raw performance. This project intentionally does not aim to:
 
 - Be a full ML framework
-- Optimize for maximum performance
+- Optimize for maximum throughput
 - Provide a UI or frontend
-- Compete with production search engines
+- Compete with large-scale search engines
 
 
-# Tradeoffs
+## Tradeoffs
 
-- Simplicity vs Performance: The engine prioritises clarity and correctness over throughput.
-
-- Determinism over stochastic models:
-  No randomness or ML models are used.
-
-- All ranking and learning behavior is visible and explainable.
+- Clarity over performance: explicit wiring and invariants are favored over micro-optimizations
+- Determinism over stochastic models: no randomness or opaque ML
+- Explicit learning: learning signals are bounded and optional
 
 
-## Current Limitations
+## Current limitations
 
-- No persistence layer for history (its in-memory only)
-- No batching/streaming support
+- History persistence is simple and file-based
+- No batching or streaming APIs
 - No large-scale indexing structures
-- Predictors are hand-written, not learned
+- Predictors are hand-authored, not learned
 - No domain-specific tuning out of the box
-
-
-## CLI CONTRACT/DEMO
-
-aac suggest <text>        # fast, clean, scriptable
-aac explain <text>        # explicit explainability
-aac record <text> <val>   # learning
-aac debug <text>          # developer-only trace
