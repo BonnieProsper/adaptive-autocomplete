@@ -6,7 +6,7 @@ The project focuses on architecture, correctness, and extensibility over feature
 
 This repository is intentionally scoped and opinionated. Every design decision exists to make the system easier to reason about, extend, and audit.
 
-# High-level architecture
+## High-level architecture
 
 AAC is structured as a layered pipeline with explicit responsibilities and invariants:
 
