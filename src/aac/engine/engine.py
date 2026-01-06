@@ -148,7 +148,7 @@ class AutocompleteEngine:
         ranked = self._apply_ranking(ctx, scored)
         return [s.suggestion for s in ranked]
 
-    def complete(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+    def predict_scored(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
         Lower-level API returning scored suggestions (no ranking).
         """
@@ -161,7 +161,7 @@ class AutocompleteEngine:
         Kept for backward compatibility with existing tests.
         Not part of the public API.
         """
-        return self.complete(ctx)
+        return self.predict_scored(ctx)
 
 
     def explain(self, text: str) -> list[RankingExplanation]:
