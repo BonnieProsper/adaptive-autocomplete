@@ -1,3 +1,6 @@
+# TODO: ADD
+# boost = math.log1p(count) * self.config.learning_weight
+
 from __future__ import annotations
 
 from collections.abc import Sequence
