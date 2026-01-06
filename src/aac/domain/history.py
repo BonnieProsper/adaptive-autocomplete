@@ -11,9 +11,16 @@ class HistoryEntry:
     """
     A single observed completion event.
 
+    Attributes:
+        prefix: The user input prefix at the time of selection.
+        value: The completion value selected by the user.
+        timestamp: When the selection occurred (UTC, timezone-aware).
+
     Notes:
-    - Timestamp is immutable and always timezone-aware (UTC).
-    - Enables recency-aware learning signals (decay, sessions, trends).
+        - Entries are immutable once created.
+        - Timestamps are always stored in UTC.
+        - Enables future extensions such as recency decay, session analysis,
+          or time-windowed learning strategies.
     """
     prefix: str
     value: str
@@ -24,12 +31,17 @@ class History:
     """
     Append-only store of user completion events.
 
-    Acts as the single source of truth for all learning signals.
+    Acts as the single source of truth for all learning signals in the system.
 
     Design guarantees:
-    - Entries are immutable once recorded
-    - No deletion or mutation
-    - Backwards-compatible counting APIs
+        - Entries are immutable once recorded
+        - No deletion or in-place mutation
+        - Safe to share across predictors and rankers
+        - Persistence-friendly via explicit snapshot export
+
+    This class intentionally separates:
+        - In-memory domain representation (HistoryEntry)
+        - Serialized representation (snapshot)
     """
 
     def __init__(self) -> None:
@@ -46,11 +58,14 @@ class History:
         Record a completion selection.
 
         Parameters:
-        - prefix: user input prefix
-        - value: selected completion
-        - timestamp: optional explicit timestamp (UTC recommended)
+            prefix: The user input prefix.
+            value: The completion selected by the user.
+            timestamp: Optional explicit timestamp. If omitted,
+                       the current UTC time is used.
 
-        If timestamp is omitted, current UTC time is used.
+        Notes:
+            - This operation is append-only.
+            - Callers should treat History as write-once per event.
         """
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
@@ -65,13 +80,22 @@ class History:
 
     def entries(self) -> Sequence[HistoryEntry]:
         """
-        Immutable view of all recorded events.
+        Immutable view of all recorded history entries.
+
+        Returns:
+            A tuple of HistoryEntry objects in insertion order.
         """
         return tuple(self._entries)
 
     def entries_for_prefix(self, prefix: str) -> Sequence[HistoryEntry]:
         """
-        All history entries matching a given prefix.
+        Return all history entries matching a given prefix.
+
+        Parameters:
+            prefix: The prefix to filter by.
+
+        Returns:
+            A tuple of HistoryEntry objects.
         """
         return tuple(
             entry for entry in self._entries
@@ -82,7 +106,14 @@ class History:
         """
         Count how often each value was selected for a given prefix.
 
-        Backwards-compatible API (time-agnostic).
+        This is a backwards-compatible, time-agnostic API intended
+        for simple learning strategies.
+
+        Parameters:
+            prefix: The prefix to aggregate counts for.
+
+        Returns:
+            Mapping of completion value -> selection count.
         """
         counts: dict[str, int] = defaultdict(int)
 
@@ -100,7 +131,14 @@ class History:
         """
         Count selections for a prefix occurring at or after a timestamp.
 
-        Enables time-decayed or recency-weighted learning.
+        Enables recency-aware or time-decayed learning strategies.
+
+        Parameters:
+            prefix: The prefix to aggregate counts for.
+            since: Lower bound (inclusive) for entry timestamps.
+
+        Returns:
+            Mapping of completion value -> selection count.
         """
         counts: dict[str, int] = defaultdict(int)
 
@@ -116,6 +154,12 @@ class History:
     def count(self, value: str) -> int:
         """
         Total count for a specific value across all prefixes.
+
+        Parameters:
+            value: Completion value to count.
+
+        Returns:
+            Number of times the value was selected.
         """
         return sum(
             1 for entry in self._entries
@@ -124,18 +168,20 @@ class History:
 
     def snapshot(self) -> dict[str, dict[str, int]]:
         """
-        Returns a serializable snapshot of history data.
+        Return a JSON-serializable snapshot of history data.
 
         Format:
-        {
-            "<prefix>": {
-                "<value>": count
+            {
+                "<prefix>": {
+                    "<value>": count
+                }
             }
-        }
 
-        Note:
-        - Snapshot intentionally omits timestamps
-        - Stable, compact, and storage-friendly
+        Design notes:
+            - Snapshot intentionally omits timestamps
+            - Keys and values are JSON primitives only
+            - Stable, compact, and storage-friendly
+            - Suitable for persistence, debugging, and inspection
         """
         snapshot: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
