@@ -47,3 +47,33 @@ def build_engine(
         ranker=ranker,
         history=history,
     )
+
+
+# TODO: ADD PRESETS e.g
+"""
+from aac.pipelines.developer import build_developer_pipeline
+from aac.ranking.presets import balanced_learning, conservative_learning
+
+def build_engine(
+    *,
+    history: History,
+    config: EngineConfig,
+    preset: str = "developer",
+) -> AutocompleteEngine:
+    if preset == "developer":
+        predictors = build_developer_pipeline(history=history)
+        ranker = balanced_learning(history)
+
+    elif preset == "minimal":
+        predictors = build_minimal_pipeline(history=history)
+        ranker = conservative_learning(history)
+
+    else:
+        raise ValueError(f"Unknown preset: {preset}")
+
+    return AutocompleteEngine(
+        predictors=predictors,
+        ranker=ranker,
+        history=history,
+    )
+"""
