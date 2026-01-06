@@ -1,4 +1,9 @@
-from aac.domain.types import CompletionContext, ScoredSuggestion, Suggestion, WeightedPredictor
+from aac.domain.types import (
+    CompletionContext,
+    ScoredSuggestion,
+    Suggestion,
+    WeightedPredictor,
+)
 from aac.engine.engine import AutocompleteEngine
 from tests.contracts.predictor_contract import PredictorContractTestMixin
 
@@ -8,7 +13,8 @@ class DummyPredictor:
         self.name = name
         self._score = score
 
-    def predict(self, context: CompletionContext):
+    # NOTE: parameter name MUST match Predictor protocol
+    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         return [
             ScoredSuggestion(
                 suggestion=Suggestion(value="hello"),
@@ -35,7 +41,10 @@ def test_weighting_affects_score():
     )
 
     ctx = CompletionContext(text="h")
-    results = engine.complete(ctx)
+
+    # Correct API: engine emits scored suggestions
+    results = engine.predict_scored(ctx)
 
     assert len(results) == 1
+    assert results[0].suggestion.value == "hello"
     assert results[0].score == 4.0
