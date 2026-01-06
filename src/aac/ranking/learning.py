@@ -1,6 +1,3 @@
-# TODO: ADD
-# boost = math.log1p(count) * self.config.learning_weight
-
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -21,7 +18,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
     - Optional dominance bounding to prevent runaway effects
 
     This ranker is intentionally simple, deterministic, and fully explainable.
-    More advanced time-based or non-linear learning is handled by DecayRanker.
+    More advanced time-based or non-linear learning is handled elsewhere.
 
     Invariants:
     - No history signal => original order preserved
@@ -54,15 +51,15 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
     # --- learning internals ---
 
-    def _history_boost(self, *, count: int, base_score: float) -> float:
+    def _compute_history_boost(self, *, count: int, base_score: float) -> float:
         """
         Compute a bounded linear learning boost.
 
         Formula:
-            boost = count * self._boost
+            raw_boost = count * self._boost
 
         Bounding:
-        - Relative dominance cap based on base score
+            raw_boost <= dominance_ratio * base_score
         """
         if count <= 0:
             return 0.0
@@ -73,6 +70,23 @@ class LearningRanker(Ranker, LearnsFromHistory):
             boost = min(boost, self._dominance_ratio * base_score)
 
         return boost
+
+    def _compute_adjusted_score(
+        self,
+        *,
+        value: str,
+        base_score: float,
+        counts: dict[str, int],
+    ) -> float:
+        """
+        Compute the final score after applying learning effects.
+        """
+        count = counts.get(value, 0)
+        boost = self._compute_history_boost(
+            count=count,
+            base_score=base_score,
+        )
+        return base_score + boost
 
     # --- ranking ---
 
@@ -86,24 +100,24 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         counts = self.history.counts_for_prefix(prefix)
 
-        # Invariant: no signal => preserve original order
+        # Invariant: no history signal => preserve original order
         if not counts:
             return list(suggestions)
 
-        adjusted: list[tuple[float, int, ScoredSuggestion]] = []
+        scored: list[tuple[float, int, ScoredSuggestion]] = []
 
         for idx, s in enumerate(suggestions):
-            count = counts.get(s.suggestion.value, 0)
-            boost = self._history_boost(
-                count=count,
+            final_score = self._compute_adjusted_score(
+                value=s.suggestion.value,
                 base_score=s.score,
+                counts=counts,
             )
-            adjusted.append((s.score + boost, idx, s)) # TODO: duplicates logic with explain(), keep anyway
+            scored.append((final_score, idx, s))
 
         # Stable sort: score desc, original order as tie-break
-        adjusted.sort(key=lambda t: (-t[0], t[1]))
+        scored.sort(key=lambda t: (-t[0], t[1]))
 
-        return [s for _, _, s in adjusted]
+        return [s for _, _, s in scored]
 
     # --- explanation ---
 
@@ -118,7 +132,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             count = counts.get(s.suggestion.value, 0)
-            boost = self._history_boost(
+            boost = self._compute_history_boost(
                 count=count,
                 base_score=s.score,
             )
