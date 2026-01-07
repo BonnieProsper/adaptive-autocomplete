@@ -13,7 +13,7 @@ class DummyPredictor:
         self.name = name
         self._score = score
 
-    # NOTE: parameter name MUST match Predictor protocol
+    # NOTE: parameter name must match Predictor protocol
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         return [
             ScoredSuggestion(
