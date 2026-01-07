@@ -1,28 +1,17 @@
 from __future__ import annotations
 
-from aac.config import EngineConfig
 from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
-from aac.pipelines.developer import build_developer_pipeline
-from aac.ranking.learning import LearningRanker
+from aac.presets import developer_engine
 
 
 def build_engine(
     *,
     history: History,
-    config: EngineConfig,
     preset: str = "developer",
 ) -> AutocompleteEngine:
-    """
-    Construct an autocomplete engine based on a named preset.
-
-    Presets define:
-    - predictor pipeline
-    - ranking strategy
-    """
-
     if preset == "developer":
-        predictors = build_developer_pipeline(
+        return developer_engine(
             vocabulary=[
                 "hello",
                 "help",
@@ -34,46 +23,5 @@ def build_engine(
             ],
             history=history,
         )
-    else:
-        raise ValueError(f"Unknown engine preset: {preset}")
 
-    ranker = LearningRanker(
-        history=history,
-        config=config,
-    )
-
-    return AutocompleteEngine(
-        predictors=predictors,
-        ranker=ranker,
-        history=history,
-    )
-
-
-# TODO: ADD PRESETS e.g
-"""
-from aac.pipelines.developer import build_developer_pipeline
-from aac.ranking.presets import balanced_learning, conservative_learning
-
-def build_engine(
-    *,
-    history: History,
-    config: EngineConfig,
-    preset: str = "developer",
-) -> AutocompleteEngine:
-    if preset == "developer":
-        predictors = build_developer_pipeline(history=history)
-        ranker = balanced_learning(history)
-
-    elif preset == "minimal":
-        predictors = build_minimal_pipeline(history=history)
-        ranker = conservative_learning(history)
-
-    else:
-        raise ValueError(f"Unknown preset: {preset}")
-
-    return AutocompleteEngine(
-        predictors=predictors,
-        ranker=ranker,
-        history=history,
-    )
-"""
+    raise ValueError(f"Unknown engine preset: {preset}")
