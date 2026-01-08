@@ -1,13 +1,12 @@
 """
 DEBUG COMMAND
 
-This output is verbose, unstable and 
-intended for engine inspection, not end users
+Verbose, unstable output intended for engine inspection,
+not end users. Not part of the public API.
 """
 from __future__ import annotations
 
 from aac.engine.engine import AutocompleteEngine
-from aac.pipelines.debug import debug_pipeline
 
 
 def run(
@@ -15,4 +14,11 @@ def run(
     engine: AutocompleteEngine,
     text: str,
 ) -> None:
-    debug_pipeline(engine, text)
+    """
+    Invoke engine debug mode.
+
+    This deliberately routes through the engine
+    to avoid leaking internal pipeline structure
+    into the CLI layer.
+    """
+    engine.debug(text)

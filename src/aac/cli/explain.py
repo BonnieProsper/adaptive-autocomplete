@@ -10,10 +10,12 @@ def run(
     limit: int,
 ) -> None:
     explanations = engine.explain(text)[:limit]
+
     for exp in explanations:
         print(
             f"{exp.value:12} "
-            f"base={exp.base_score:.2f} "
-            f"+ history={exp.history_boost:.2f} "
-            f"=> {exp.final_score:.2f}"
+            f"base={exp.base_score:6.2f} "
+            f"+ history={exp.history_boost:6.2f} "
+            f"= {exp.final_score:6.2f} "
+            f"[source={exp.source}]"
         )

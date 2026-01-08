@@ -50,11 +50,27 @@ def main() -> None:
         preset=args.preset,
     )
 
-    if args.command == "suggest":
-        suggest.run(engine=engine, text=args.text, limit=args.limit)
-    elif args.command == "explain":
-        explain.run(engine=engine, text=args.text, limit=args.limit)
-    elif args.command == "record":
-        record.run(engine=engine, store=store, text=args.text, value=args.value)
-    elif args.command == "debug":
-        debug.run(engine=engine, text=args.text)
+    dispatch = {
+        "suggest": lambda: suggest.run(
+            engine=engine,
+            text=args.text,
+            limit=args.limit,
+        ),
+        "explain": lambda: explain.run(
+            engine=engine,
+            text=args.text,
+            limit=args.limit,
+        ),
+        "record": lambda: record.run(
+            engine=engine,
+            store=store,
+            text=args.text,
+            value=args.value,
+        ),
+        "debug": lambda: debug.run(
+            engine=engine,
+            text=args.text,
+        ),
+    }
+
+    dispatch[args.command]()
