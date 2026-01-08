@@ -1,8 +1,8 @@
 # aac/ranking/explanation.py
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from typing import Mapping
 
 
 @dataclass(frozen=True)
