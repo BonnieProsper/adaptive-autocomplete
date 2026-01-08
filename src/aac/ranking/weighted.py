@@ -1,4 +1,3 @@
-# aac/ranking/weighted.py
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -10,16 +9,20 @@ from aac.ranking.explanation import RankingExplanation
 
 class WeightedRanker(Ranker):
     """
-    Wraps a ranker and scales its output scores by a constant factor.
+    Wraps a ranker and scales its explanatory contribution.
 
-    Design:
-    - Doesn't mutate input suggestions
-    - Produces new ScoredSuggestion instances
-    - Preserves ordering and explanations
+    - Does NOT modify ScoredSuggestion instances
+    - Does NOT change ordering semantics
+    - Only affects explanation math
+
+    This preserves engine invariants:
+    - identity stability
+    - deterministic ordering
+    - explanation consistency
     """
 
     def __init__(self, ranker: Ranker, weight: float = 1.0) -> None:
-        if weight <= 0:
+        if weight <= 0.0:
             raise ValueError("weight must be positive")
         self._ranker = ranker
         self._weight = weight
@@ -29,20 +32,8 @@ class WeightedRanker(Ranker):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[ScoredSuggestion]:
-        ranked = self._ranker.rank(prefix, suggestions)
-
-        if self._weight == 1.0:
-            return list(ranked)
-
-        return [
-            ScoredSuggestion(
-                suggestion=s.suggestion,
-                score=s.score * self._weight,
-                explanation=s.explanation,
-                trace=list(s.trace),
-            )
-            for s in ranked
-        ]
+        # Delegate ordering entirely
+        return list(self._ranker.rank(prefix, suggestions))
 
     def explain(
         self,
