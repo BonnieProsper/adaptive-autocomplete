@@ -1,6 +1,8 @@
+# aac/ranking/explanation.py
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
+from typing import Mapping
 
 
 @dataclass(frozen=True)
@@ -9,20 +11,27 @@ class RankingExplanation:
     Explains how a final ranking score was produced for a suggestion.
 
     Scoring lifecycle:
-    - Predictor produces a base score
-    - Learning/ranking layers apply adjustments
+    - Predictors contribute base score components
+    - Ranking layers apply adjustments (e.g. learning)
     - Final score is derived deterministically
 
     Invariants:
     - final_score == base_score + history_boost
-    - source identifies the originating predictor
     """
 
     value: str
+
+    # Aggregated scores
     base_score: float
     history_boost: float
     final_score: float
+
+    # Primary source (e.g. top-level ranker)
     source: str
+
+    # Optional detailed breakdowns
+    base_components: Mapping[str, float] = field(default_factory=dict)
+    history_components: Mapping[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         expected = self.base_score + self.history_boost
@@ -33,29 +42,41 @@ class RankingExplanation:
                 f"!= base_score + history_boost ({expected})"
             )
 
-    def to_dict(self) -> dict[str, float | str]:
+    def to_dict(self) -> dict[str, float | str | dict[str, float]]:
+        """
+        JSON-serializable representation.
+        """
         return asdict(self)
 
     def merge(self, other: RankingExplanation) -> RankingExplanation:
         """
-        Return a new explanation representing the merged contribution
-        of this explanation and another.
+        Merge another explanation into this one.
 
-        Only scores are combined; the source remains unchanged.
+        Intended for combining contributions from multiple rankers.
         """
         if self.value != other.value:
             raise ValueError("Cannot merge explanations for different values")
 
-        base = self.base_score + other.base_score
-        history = self.history_boost + other.history_boost
         return RankingExplanation(
             value=self.value,
-            base_score=base,
-            history_boost=history,
-            final_score=base + history,
+            base_score=self.base_score + other.base_score,
+            history_boost=self.history_boost + other.history_boost,
+            final_score=(
+                self.base_score
+                + other.base_score
+                + self.history_boost
+                + other.history_boost
+            ),
             source=self.source,
+            base_components={
+                **self.base_components,
+                **other.base_components,
+            },
+            history_components={
+                **self.history_components,
+                **other.history_components,
+            },
         )
-
 
     @staticmethod
     def from_predictor(
@@ -64,23 +85,40 @@ class RankingExplanation:
         score: float,
         source: str,
     ) -> RankingExplanation:
+        """
+        Create an explanation from a single predictor contribution.
+        """
         return RankingExplanation(
             value=value,
             base_score=score,
             history_boost=0.0,
             final_score=score,
             source=source,
+            base_components={source: score},
+            history_components={},
         )
 
-    def apply_history_boost(self, boost: float) -> RankingExplanation:
+    def apply_history_boost(
+        self,
+        *,
+        boost: float,
+        source: str,
+    ) -> RankingExplanation:
+        """
+        Apply a learning/history adjustment.
+        """
         return RankingExplanation(
             value=self.value,
             base_score=self.base_score,
             history_boost=self.history_boost + boost,
             final_score=self.base_score + self.history_boost + boost,
             source=self.source,
+            base_components=dict(self.base_components),
+            history_components={
+                **self.history_components,
+                source: self.history_components.get(source, 0.0) + boost,
+            },
         )
-
 
     def short_summary(self) -> str:
         return (
@@ -89,4 +127,3 @@ class RankingExplanation:
             f"history={self.history_boost:.2f}, "
             f"final={self.final_score:.2f}"
         )
-
