@@ -66,14 +66,20 @@ class History:
         Notes:
             - This operation is append-only.
             - Callers should treat History as write-once per event.
+            - Prefix and value are coerced to strings to enforce
+              persistence and serialization invariants.
         """
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
 
+        # Defensive boundary: History guarantees string keys
+        prefix_str = str(prefix)
+        value_str = str(value)
+
         self._entries.append(
             HistoryEntry(
-                prefix=prefix,
-                value=value,
+                prefix=prefix_str,
+                value=value_str,
                 timestamp=timestamp,
             )
         )
@@ -97,9 +103,11 @@ class History:
         Returns:
             A tuple of HistoryEntry objects.
         """
+        prefix_str = str(prefix)
+
         return tuple(
             entry for entry in self._entries
-            if entry.prefix == prefix
+            if entry.prefix == prefix_str
         )
 
     def counts_for_prefix(self, prefix: str) -> dict[str, int]:
@@ -115,10 +123,11 @@ class History:
         Returns:
             Mapping of completion value -> selection count.
         """
+        prefix_str = str(prefix)
         counts: dict[str, int] = defaultdict(int)
 
         for entry in self._entries:
-            if entry.prefix == prefix:
+            if entry.prefix == prefix_str:
                 counts[entry.value] += 1
 
         return dict(counts)
@@ -140,10 +149,11 @@ class History:
         Returns:
             Mapping of completion value -> selection count.
         """
+        prefix_str = str(prefix)
         counts: dict[str, int] = defaultdict(int)
 
         for entry in self._entries:
-            if entry.prefix != prefix:
+            if entry.prefix != prefix_str:
                 continue
             if entry.timestamp < since:
                 continue
@@ -161,9 +171,11 @@ class History:
         Returns:
             Number of times the value was selected.
         """
+        value_str = str(value)
+
         return sum(
             1 for entry in self._entries
-            if entry.value == value
+            if entry.value == value_str
         )
 
     def snapshot(self) -> dict[str, dict[str, int]]:
