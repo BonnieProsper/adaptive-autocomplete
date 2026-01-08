@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Sequence
 
 from aac.domain.types import ScoredSuggestion
 from aac.ranking.base import Ranker
@@ -9,18 +9,19 @@ class ScoreRanker(Ranker):
     """
     Pure score-based ranker.
 
-    - No mutation
-    - Stable
+    Invariants:
     - Deterministic
+    - Stable
+    - Non-mutating
     - Idempotent
     """
 
     def rank(
         self,
         prefix: str,
-        suggestions: Iterable[ScoredSuggestion],
+        suggestions: Sequence[ScoredSuggestion],
     ) -> list[ScoredSuggestion]:
-        # Defensive copy to preserve idempotence
+        # Defensive copy via sorted()
         return sorted(
             suggestions,
             key=lambda s: s.score,
@@ -30,9 +31,9 @@ class ScoreRanker(Ranker):
     def explain(
         self,
         prefix: str,
-        suggestions: Iterable[ScoredSuggestion],
+        suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        ordered = self.rank(prefix, suggestions)
+        ranked = self.rank(prefix, suggestions)
 
         return [
             RankingExplanation(
@@ -42,12 +43,12 @@ class ScoreRanker(Ranker):
                 final_score=s.score,
                 source="score",
             )
-            for s in ordered
+            for s in ranked
         ]
 
 
 def score_and_rank(
-    suggestions: Iterable[ScoredSuggestion],
+    suggestions: Sequence[ScoredSuggestion],
 ) -> list[ScoredSuggestion]:
     """
     Pure functional helper used by ranking invariant tests.

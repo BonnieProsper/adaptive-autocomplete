@@ -11,8 +11,11 @@ class Ranker(ABC):
     """
     Base contract for all ranking strategies.
 
-    Rankers operate on scored suggestions and must be:
-    - deterministic, stable, non-mutating
+    Rankers must be:
+    - deterministic
+    - stable
+    - non-mutating
+    - explanation-aligned (explain() matches rank() order)
     """
 
     @abstractmethod
@@ -33,6 +36,6 @@ class Ranker(ABC):
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
         """
-        Return ranking explanations aligned with rank().
+        Return ranking explanations aligned exactly with rank().
         """
         raise NotImplementedError

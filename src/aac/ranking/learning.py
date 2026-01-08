@@ -17,14 +17,12 @@ class LearningRanker(Ranker, LearnsFromHistory):
     - Linear boost: count * boost
     - Optional dominance bounding to prevent runaway effects
 
-    This ranker is intentionally simple, deterministic, and fully explainable.
-    More advanced time-based or non-linear learning is handled elsewhere.
-
     Invariants:
     - No history signal => original order preserved
     - Learning is additive (never suppresses)
     - Learning influence is bounded
-    - Does not mutate input suggestions or history
+    - Deterministic and stable
+    - Does not mutate inputs or history
     """
 
     def __init__(
@@ -33,7 +31,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
         *,
         boost: float = 1.0,
         dominance_ratio: float = 1.0,
-        config: object | None = None,  # accepted for forward compatibility
+        config: object | None = None,  # forward compatibility
     ) -> None:
         if boost < 0.0:
             raise ValueError("boost must be non-negative")
@@ -41,13 +39,13 @@ class LearningRanker(Ranker, LearnsFromHistory):
         if dominance_ratio < 0.0:
             raise ValueError("dominance_ratio must be non-negative")
 
-        # Required by LearnsFromHistory: must be a public attribute
+        # Required by LearnsFromHistory
         self.history: History = history
 
         self._boost = boost
         self._dominance_ratio = dominance_ratio
 
-        # config intentionally unused (future extension point)
+        # config intentionally unused
 
     # --- learning internals ---
 
@@ -55,11 +53,8 @@ class LearningRanker(Ranker, LearnsFromHistory):
         """
         Compute a bounded linear learning boost.
 
-        Formula:
-            raw_boost = count * self._boost
-
-        Bounding:
-            raw_boost <= dominance_ratio * base_score
+        raw_boost = count * boost
+        raw_boost <= dominance_ratio * base_score
         """
         if count <= 0:
             return 0.0
@@ -78,9 +73,6 @@ class LearningRanker(Ranker, LearnsFromHistory):
         base_score: float,
         counts: dict[str, int],
     ) -> float:
-        """
-        Compute the final score after applying learning effects.
-        """
         count = counts.get(value, 0)
         boost = self._compute_history_boost(
             count=count,
@@ -106,18 +98,18 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         scored: list[tuple[float, int, ScoredSuggestion]] = []
 
-        for idx, s in enumerate(suggestions):
+        for index, suggestion in enumerate(suggestions):
             final_score = self._compute_adjusted_score(
-                value=s.suggestion.value,
-                base_score=s.score,
+                value=suggestion.suggestion.value,
+                base_score=suggestion.score,
                 counts=counts,
             )
-            scored.append((final_score, idx, s))
+            scored.append((final_score, index, suggestion))
 
-        # Stable sort: score desc, original order as tie-break
+        # Stable: score desc, original index as tiebreaker
         scored.sort(key=lambda t: (-t[0], t[1]))
 
-        return [s for _, _, s in scored]
+        return [suggestion for _, _, suggestion in scored]
 
     # --- explanation ---
 
@@ -126,11 +118,12 @@ class LearningRanker(Ranker, LearnsFromHistory):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
+        ranked = self.rank(prefix, suggestions)
         counts = self.history.counts_for_prefix(prefix)
 
         explanations: list[RankingExplanation] = []
 
-        for s in suggestions:
+        for s in ranked:
             count = counts.get(s.suggestion.value, 0)
             boost = self._compute_history_boost(
                 count=count,
