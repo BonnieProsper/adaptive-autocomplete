@@ -50,5 +50,6 @@ class HistoryPredictor(Predictor):
 
         return results
 
-    def record(self, prefix: str, value: str) -> None:
-        self._history.record(prefix, value)
+    def record(self, ctx: CompletionContext | str, value: str) -> None:
+        ctx = ensure_context(ctx)
+        self._history.record(ctx.text, value)
