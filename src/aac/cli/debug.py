@@ -21,4 +21,10 @@ def run(
     to avoid leaking internal pipeline structure
     into the CLI layer.
     """
-    engine.debug(text)
+    output = engine.debug(text)
+
+    if output is None:
+        print("(debug produced no output)")
+    else:
+        print(output)
+
