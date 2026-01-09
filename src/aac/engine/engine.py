@@ -40,7 +40,7 @@ class AutocompleteEngine:
         ranker: Ranker | Sequence[Ranker] | None = None,
         history: History | None = None,
     ) -> None:
-        # Normalize predictors at the boundary
+        # Normalize predictors
         self._predictors: list[WeightedPredictor] = []
         for p in predictors:
             if isinstance(p, WeightedPredictor):
@@ -50,7 +50,7 @@ class AutocompleteEngine:
                     WeightedPredictor(predictor=p, weight=1.0)
                 )
 
-        # Normalize rankers to a list
+        # Normalize rankers
         if ranker is None:
             self._rankers: list[Ranker] = [ScoreRanker()]
         elif isinstance(ranker, Ranker):
@@ -58,7 +58,7 @@ class AutocompleteEngine:
         else:
             self._rankers = list(ranker)
 
-        # Single source of truth for history
+        # Resolve history source of truth
         if history is not None:
             self._history = history
         elif any(isinstance(r, LearnsFromHistory) for r in self._rankers):
@@ -69,16 +69,13 @@ class AutocompleteEngine:
         else:
             self._history = History()
 
+    # ------------------------------------------------------------------
+    # Core pipeline
+    # ------------------------------------------------------------------
+
     def _score(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
         Collect and aggregate scored suggestions from all predictors.
-
-        Aggregation invariants:
-        - Suggestions with identical values are merged
-        - Scores are summed
-        - Predictor weights are applied exactly once
-        - Explanation is preserved from the first producer
-        - Trace logs all contributions for debugging and attribution
         """
         aggregated: dict[str, ScoredSuggestion] = {}
 
@@ -118,7 +115,7 @@ class AutocompleteEngine:
         scored: list[ScoredSuggestion],
     ) -> list[ScoredSuggestion]:
         """
-        Apply all rankers while enforcing architectural invariants.
+        Apply rankers while enforcing invariants.
         """
         ranked = scored
         original_ids = {id(s) for s in ranked}
@@ -126,12 +123,10 @@ class AutocompleteEngine:
         for ranker in self._rankers:
             ranked = ranker.rank(ctx.text, ranked)
 
-            # Invariant: rankers must not add/remove suggestions
             assert {id(s) for s in ranked} == original_ids, (
                 f"Ranker {ranker.__class__.__name__} modified suggestion set"
             )
 
-        # Invariant: scores must be finite
         for s in ranked:
             assert math.isfinite(s.score), (
                 f"Non-finite score for '{s.suggestion.value}': {s.score}"
@@ -139,38 +134,29 @@ class AutocompleteEngine:
 
         return ranked
 
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
     def suggest(self, text: str) -> list[Suggestion]:
-        """
-        Public API: return ranked suggestions without scores.
-        """
         ctx = CompletionContext(text)
-        scored = self._score(ctx)
-        ranked = self._apply_ranking(ctx, scored)
+        ranked = self._apply_ranking(ctx, self._score(ctx))
         return [s.suggestion for s in ranked]
 
     def predict_scored(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
-        """
-        Lower-level API returning scored suggestions (no ranking).
-        """
         return self._score(ctx)
 
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Legacy alias for complete().
-    
-        Kept for backward compatibility with existing tests.
-        Not part of the public API.
+        Legacy alias kept for test compatibility.
         """
         return self.predict_scored(ctx)
 
+    # ------------------------------------------------------------------
+    # Explanation
+    # ------------------------------------------------------------------
 
     def explain(self, text: str) -> list[RankingExplanation]:
-        """
-        Public API: explain how suggestions were ranked.
-
-        Explanations are aggregated across all rankers while preserving
-        final ranked order.
-        """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
         ranked = self._apply_ranking(ctx, scored)
@@ -182,8 +168,6 @@ class AutocompleteEngine:
                 if exp.value not in aggregated:
                     aggregated[exp.value] = exp
                 else:
-                    # IMPORTANT:
-                    # RankingExplanation.merge() returns a NEW instance.
                     aggregated[exp.value] = aggregated[exp.value].merge(exp)
 
         return [
@@ -193,9 +177,6 @@ class AutocompleteEngine:
         ]
 
     def explain_as_dicts(self, text: str) -> list[dict[str, float | str]]:
-        """
-        JSON-serializable explanation export for API consumers.
-        """
         return [
             {
                 "value": e.value,
@@ -206,14 +187,11 @@ class AutocompleteEngine:
             for e in self.explain(text)
         ]
 
-    def record_selection(self, text: str, value: str) -> None:
-        """
-        Records user feedback for learning.
+    # ------------------------------------------------------------------
+    # Learning
+    # ------------------------------------------------------------------
 
-        This:
-        - updates global history
-        - forwards signals to predictors that support learning
-        """
+    def record_selection(self, text: str, value: str) -> None:
         ctx = CompletionContext(text)
         self._history.record(ctx.text, value)
 
@@ -222,9 +200,30 @@ class AutocompleteEngine:
             if callable(record):
                 record(ctx, value)
 
+    # ------------------------------------------------------------------
+    # Developer/debug API (INTENTIONALLY UNSTABLE)
+    # ------------------------------------------------------------------
+
+    def debug(self, text: str) -> dict[str, object]:
+        """
+        Developer-only debug surface.
+
+        Returns internal pipeline state for inspection.
+        NOT a stable API.
+        """
+        ctx = CompletionContext(text)
+        scored = self._score(ctx)
+        ranked = self._apply_ranking(ctx, scored)
+
+        return {
+            "input": text,
+            "scored": scored,
+            "ranked": ranked,
+            "suggestions": [s.suggestion.value for s in ranked],
+        }
+
+    # ------------------------------------------------------------------
+
     @property
     def history(self) -> History:
-        """
-        Read-only access to the engine's history.
-        """
         return self._history
