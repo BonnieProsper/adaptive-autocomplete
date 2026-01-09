@@ -13,7 +13,12 @@ from aac.domain.types import (
 
 class HistoryPredictor(Predictor):
     """
-    Suggests words based on user selection history.
+    Recall-based predictor driven by user selection history.
+
+    Responsibility:
+    - Introduces previously selected values as candidates
+    - Does NOT perform ranking or dominance control
+    - LearningRanker is responsible for ordering and preference shaping
     """
     name = "history"
 
@@ -51,5 +56,8 @@ class HistoryPredictor(Predictor):
         return results
 
     def record(self, ctx: CompletionContext | str, value: str) -> None:
+        """
+        Record user selection feedback for recall-based learning.
+        """
         ctx = ensure_context(ctx)
         self._history.record(ctx.text, value)
