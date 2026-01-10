@@ -1,5 +1,3 @@
-# TODO: fix source = source behaviour, suggest() hides scores
-
 from __future__ import annotations
 
 import math
@@ -21,6 +19,14 @@ from aac.ranking.score import ScoreRanker
 
 
 class DebugState(TypedDict):
+    """
+    Internal debug surface.
+
+    WARNING:
+        Values reference live internal objects.
+        Returned data MUST NOT be mutated.
+    """
+
     input: str
     scored: list[ScoredSuggestion]
     ranked: list[ScoredSuggestion]
@@ -31,7 +37,7 @@ class AutocompleteEngine:
     """
     Orchestrates prediction, ranking, learning, and explanation.
 
-    Public entrypoint for the autocomplete system.
+    This is the public entrypoint for the autocomplete system.
     Only documented methods are considered stable.
 
     Architectural invariants:
@@ -50,7 +56,7 @@ class AutocompleteEngine:
         ranker: Ranker | Sequence[Ranker] | None = None,
         history: History | None = None,
     ) -> None:
-        # Normalize predictors
+        # Normalize predictors to WeightedPredictor
         self._predictors: list[WeightedPredictor] = []
         for p in predictors:
             if isinstance(p, WeightedPredictor):
@@ -86,6 +92,10 @@ class AutocompleteEngine:
     def _score(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
         Collect and aggregate scored suggestions from all predictors.
+
+        Notes:
+            - Predictor explanations are preserved but not interpreted here.
+            - Aggregation is additive across predictors and weights.
         """
         aggregated: dict[str, ScoredSuggestion] = {}
 
@@ -125,7 +135,10 @@ class AutocompleteEngine:
         scored: list[ScoredSuggestion],
     ) -> list[ScoredSuggestion]:
         """
-        Apply rankers while enforcing invariants.
+        Apply rankers while enforcing engine invariants.
+
+        Rankers may reorder or rescore suggestions,
+        but must not add or remove entries.
         """
         ranked = scored
         original_ids = {id(s) for s in ranked}
@@ -152,15 +165,24 @@ class AutocompleteEngine:
         """
         Return ranked suggestions for user-facing consumption.
 
-        Note:
-            This API intentionally hides scores and explanations.
-            Use explain() or debug() for introspection.
+        This API intentionally hides scores and explanations.
+        Use explain() or debug() for introspection.
         """
         ctx = CompletionContext(text)
         ranked = self._apply_ranking(ctx, self._score(ctx))
         return [s.suggestion for s in ranked]
 
-    def predict_scored(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+    def predict_scored_unranked(
+        self, ctx: CompletionContext
+    ) -> list[ScoredSuggestion]:
+        """
+        Return scored suggestions WITHOUT ranking.
+
+        WARNING:
+            - Does not apply rankers
+            - Does not enforce ranking invariants
+            - Intended for internal / diagnostic use only
+        """
         return self._score(ctx)
 
     # ------------------------------------------------------------------
@@ -168,6 +190,14 @@ class AutocompleteEngine:
     # ------------------------------------------------------------------
 
     def explain(self, text: str) -> list[RankingExplanation]:
+        """
+        Return per-suggestion ranking explanations.
+
+        Notes:
+            - Explanations are ranker-driven.
+            - Predictor explanations are treated as upstream signal
+              and may be incorporated by rankers if desired.
+        """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
         ranked = self._apply_ranking(ctx, scored)
@@ -179,8 +209,6 @@ class AutocompleteEngine:
                 if exp.value not in aggregated:
                     aggregated[exp.value] = exp
                 else:
-                    # Multiple rankers may contribute partial explanations.
-                    # merge them into a single per-suggestion explanation.
                     aggregated[exp.value] = aggregated[exp.value].merge(exp)
 
         return [
@@ -190,6 +218,9 @@ class AutocompleteEngine:
         ]
 
     def explain_as_dicts(self, text: str) -> list[dict[str, float | str]]:
+        """
+        Convenience adapter for CLI / serialization layers.
+        """
         return [
             {
                 "value": e.value,
@@ -205,6 +236,13 @@ class AutocompleteEngine:
     # ------------------------------------------------------------------
 
     def record_selection(self, text: str, value: str) -> None:
+        """
+        Record a user selection for learning.
+
+        Predictors may optionally implement a `record(...)` hook.
+        This is intentionally duck-typed to avoid forcing
+        learning behavior on all predictors.
+        """
         ctx = CompletionContext(text)
         self._history.record(ctx.text, value)
 
@@ -221,10 +259,8 @@ class AutocompleteEngine:
         """
         Developer-only debug surface.
 
-        Returns internal pipeline state for inspection.
         NOT a stable API.
-        Returns:
-            dict with keys: input, scored, ranked, suggestions
+        Returned objects MUST NOT be mutated.
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)
@@ -241,4 +277,5 @@ class AutocompleteEngine:
 
     @property
     def history(self) -> History:
+        """Return the engine's history source of truth."""
         return self._history
