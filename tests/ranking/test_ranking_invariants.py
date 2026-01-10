@@ -21,8 +21,8 @@ def test_ranking_is_deterministic():
 
     ctx = CompletionContext(text="he")
 
-    first = engine.predict(ctx)
-    second = engine.predict(ctx)
+    first = engine.predict_scored(ctx)
+    second = engine.predict_scored(ctx)
 
     assert first == second
 
@@ -83,7 +83,7 @@ def test_predictors_do_not_mutate_each_other():
     )
 
     ctx = CompletionContext(text="he")
-    results = engine.predict(ctx)
+    results = engine.predict_scored(ctx)
 
     values = [r.suggestion.value for r in results]
 

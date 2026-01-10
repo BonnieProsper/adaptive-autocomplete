@@ -155,13 +155,6 @@ class AutocompleteEngine:
     def predict_scored(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         return self._score(ctx)
 
-    def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
-        """
-        Deprecated alias for predict_scored().
-        Kept for test compatibility.
-        """
-        return self.predict_scored(ctx)
-
     # ------------------------------------------------------------------
     # Explanation
     # ------------------------------------------------------------------
