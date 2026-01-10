@@ -23,6 +23,13 @@ def main() -> None:
         help="Autocomplete engine preset",
     )
 
+    parser.add_argument(
+        "--history-path",
+        type=Path,
+        default=DEFAULT_HISTORY_PATH,
+        help="Path to persisted autocomplete history",
+    )
+
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     suggest_p = subparsers.add_parser("suggest")
@@ -42,7 +49,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    store = JsonHistoryStore(DEFAULT_HISTORY_PATH)
+    store = JsonHistoryStore(args.history_path)
     history = store.load()
 
     engine = build_engine(

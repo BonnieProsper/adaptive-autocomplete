@@ -62,6 +62,7 @@ class JsonHistoryStore(HistoryStore):
                 except (TypeError, ValueError):
                     continue
 
+                # Rehydrate counts via repeated recording to preserve semantics
                 for _ in range(count_int):
                     history.record(prefix_str, value_str)
 

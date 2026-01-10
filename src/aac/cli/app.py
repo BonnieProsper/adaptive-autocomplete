@@ -10,6 +10,14 @@ def build_engine(
     history: History,
     preset: str = "developer",
 ) -> AutocompleteEngine:
+    """
+    Construct an AutocompleteEngine from a named preset.
+
+    Presets encapsulate:
+    - predictor pipeline
+    - ranking strategy
+    - learning behavior
+    """
     if preset == "developer":
         return developer_engine(
             vocabulary=[

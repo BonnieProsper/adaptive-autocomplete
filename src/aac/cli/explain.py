@@ -12,7 +12,7 @@ def run(
     explanations = engine.explain(text)[:limit]
 
     if not explanations:
-        print("(no explanations available(no predictors produced results).)")
+        print("(no explanations available - no predictors produced results)")
         return
 
     for exp in explanations:

@@ -141,6 +141,13 @@ class AutocompleteEngine:
     # ------------------------------------------------------------------
 
     def suggest(self, text: str) -> list[Suggestion]:
+        """
+        Return ranked suggestions for user-facing consumption.
+
+        Note:
+            This API intentionally hides scores and explanations.
+            Use explain() or debug() for introspection.
+        """
         ctx = CompletionContext(text)
         ranked = self._apply_ranking(ctx, self._score(ctx))
         return [s.suggestion for s in ranked]
@@ -150,7 +157,8 @@ class AutocompleteEngine:
 
     def predict(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
         """
-        Legacy alias kept for test compatibility.
+        Deprecated alias for predict_scored().
+        Kept for test compatibility.
         """
         return self.predict_scored(ctx)
 
@@ -170,6 +178,8 @@ class AutocompleteEngine:
                 if exp.value not in aggregated:
                     aggregated[exp.value] = exp
                 else:
+                    # Multiple rankers may contribute partial explanations.
+                    # merge them into a single per-suggestion explanation.
                     aggregated[exp.value] = aggregated[exp.value].merge(exp)
 
         return [
@@ -212,6 +222,8 @@ class AutocompleteEngine:
 
         Returns internal pipeline state for inspection.
         NOT a stable API.
+        Returns:
+            dict with keys: input, scored, ranked, suggestions
         """
         ctx = CompletionContext(text)
         scored = self._score(ctx)

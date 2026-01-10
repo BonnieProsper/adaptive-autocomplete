@@ -21,15 +21,14 @@ def run(
     to avoid leaking internal pipeline structure
     into the CLI layer.
     """
-    def run(*, engine, text):
-        state = engine.debug(text)
+    state = engine.debug(text)
 
-        print(f"Input: {state['input']}")
-        print("\nScored:")
-        for s in state["scored"]:
-            print(f"  {s.suggestion.value:12} score={s.score:.2f}")
+    print(f"Input: {state['input']}")
+    print("\nScored:")
+    for s in state["scored"]:
+        print(f"  {s.suggestion.value:12} score={s.score:.2f}")
 
-        print("\nRanked:")
-        for s in state["ranked"]:
-            print(f"  {s.suggestion.value:12} score={s.score:.2f}")
+    print("\nRanked:")
+    for s in state["ranked"]:
+        print(f"  {s.suggestion.value:12} score={s.score:.2f}")
 
