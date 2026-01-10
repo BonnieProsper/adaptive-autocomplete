@@ -1,3 +1,5 @@
+# TODO: fix source = source behaviour, suggest() hides scores
+
 from __future__ import annotations
 
 import math

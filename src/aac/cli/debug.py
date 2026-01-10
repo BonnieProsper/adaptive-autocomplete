@@ -21,10 +21,15 @@ def run(
     to avoid leaking internal pipeline structure
     into the CLI layer.
     """
-    output = engine.debug(text)
+    def run(*, engine, text):
+        state = engine.debug(text)
 
-    if output is None:
-        print("(debug produced no output)")
-    else:
-        print(output)
+        print(f"Input: {state['input']}")
+        print("\nScored:")
+        for s in state["scored"]:
+            print(f"  {s.suggestion.value:12} score={s.score:.2f}")
+
+        print("\nRanked:")
+        for s in state["ranked"]:
+            print(f"  {s.suggestion.value:12} score={s.score:.2f}")
 
