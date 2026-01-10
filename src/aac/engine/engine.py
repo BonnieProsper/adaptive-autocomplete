@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from typing import TypedDict
 
 from aac.domain.history import History
 from aac.domain.types import (
@@ -17,6 +18,13 @@ from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
 from aac.ranking.explanation import RankingExplanation
 from aac.ranking.score import ScoreRanker
+
+
+class DebugState(TypedDict):
+    input: str
+    scored: list[ScoredSuggestion]
+    ranked: list[ScoredSuggestion]
+    suggestions: list[str]
 
 
 class AutocompleteEngine:
@@ -209,7 +217,7 @@ class AutocompleteEngine:
     # Developer/debug API (INTENTIONALLY UNSTABLE)
     # ------------------------------------------------------------------
 
-    def debug(self, text: str) -> dict[str, object]:
+    def debug(self, text: str) -> DebugState:
         """
         Developer-only debug surface.
 
