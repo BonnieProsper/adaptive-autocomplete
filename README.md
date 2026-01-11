@@ -189,7 +189,7 @@ The system is intentionally generic and domain-agnostic. Although demonstrated a
 
 ## Non-goals
 
-Clarity, correctness, and explainability are prioritized over raw performance. This project intentionally does not aim to:
+Clarity, correctness, and explainability are prioritized over raw performance. CLI and storage layers are intentionally thin and integration-tested manually; core logic is exhaustively unit-tested. This project intentionally does not aim to:
 
 - Be a full ML framework
 - Optimize for maximum throughput
