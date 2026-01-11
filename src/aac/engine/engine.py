@@ -172,6 +172,22 @@ class AutocompleteEngine:
         ranked = self._apply_ranking(ctx, self._score(ctx))
         return [s.suggestion for s in ranked]
 
+    def predict_scored(self, ctx: CompletionContext) -> list[ScoredSuggestion]:
+        """
+        Return ranked scored suggestions.
+
+        This is the primary scored-output API intended for:
+        - testing
+        - benchmarking
+        - engine-level inspection
+
+        Guarantees:
+        - ranking invariants enforced
+        - deterministic ordering
+        - finite scores
+        """
+        return self._apply_ranking(ctx, self._score(ctx))
+
     def predict_scored_unranked(
         self, ctx: CompletionContext
     ) -> list[ScoredSuggestion]:
