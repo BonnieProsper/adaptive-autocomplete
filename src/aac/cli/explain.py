@@ -9,10 +9,17 @@ def run(
     text: str,
     limit: int,
 ) -> None:
+    """
+    Render ranking explanations for a given input.
+
+    This is a presentation-layer adapter:
+    - No scoring logic lives here
+    - Output is intentionally human-readable
+    """
     explanations = engine.explain(text)[:limit]
 
     if not explanations:
-        print("(no explanations available - no predictors produced results)")
+        print("(no explanations available — no suggestions produced)")
         return
 
     for exp in explanations:
