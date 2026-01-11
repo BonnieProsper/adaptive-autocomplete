@@ -1,37 +1,85 @@
 # Adaptive Autocomplete Core (AAC)
 
-Adaptive Autocomplete Core (AAC) is a modular, explainable autocomplete and ranking engine designed to demonstrate how production systems generate, rank, learn from, and explain suggestions in a deterministic and auditable way.
+Adaptive Autocomplete Core (AAC) is a modular, explainable autocomplete and ranking engine that demonstrates how production systems generate, rank, learn from, and explain suggestions in a deterministic and auditable way.
 
-The project focuses on architecture, correctness, and extensibility over features, emphasising clear boundaries between signal generation, aggregation, ranking, learning, and explanation while remaining deterministic, testable, and inspectable.
+The project prioritizes architecture, correctness, and extensibility over feature breadth. It focuses on clear boundaries between signal generation, aggregation, ranking, learning, and explanation, while remaining deterministic, testable, and easy to inspect.
 
-This repository is intentionally scoped and opinionated. Design decisions are intentionally made to favor clarity, extensibility, and auditability.
+This repository is intentionally scoped and opinionated. Design decisions favor clarity and auditability over cleverness or scale.
 
 ## What this project demonstrates
 
-This project is intentionally designed to showcase:
+This project is designed to showcase:
 
 - Clean separation of concerns in a non-trivial backend system
 - Deterministic ranking pipelines with learning and explainability
 - Explicit architectural invariants enforced at runtime
-- Safe extension via composition rather than inheritance
-- Production-quality Python: typing, testing, linting, and CI
+- Safe extensibility via composition rather than inheritance
+- Production-quality Python (typing, tests, linting, CI)
 
-While the demo is an autocomplete engine, the underlying architecture directly maps to real-world search, recommendation, and ranking systems.
+While the demo uses autocomplete, the underlying architecture maps directly to real-world search, recommendation, and ranking systems.
+
+## Who this is for
+
+This project is intended for reviewers interested in backend systems design, ranking pipelines, and production-quality Python architecture rather than UI polish or frontend features.
+
+# Demo (CLI)
+
+AAC includes a minimal CLI to demonstrate learning, ranking, and explanation end to end.
+
+## Basic suggestion
+$ aac suggest he
+hello
+help
+helium
+hero
+
+## Learning from selection
+$ aac record he hello
+Recorded selection 'hello' for input 'he'
+
+$ aac suggest he
+hello
+help
+helium
+hero
+
+The ranking adapts based on usage history.
+
+## Explanation
+$ aac explain he
+hello        base= 28.00 history=+ 4.50 = 32.50 [source=score]
+help         base= 20.00 history=+ 3.00 = 23.00 [source=score]
+helium       base=  4.00 history=  0.00 =  4.00 [source=score]
 
 
-## High-level architecture
+Each suggestion includes:
 
-AAC is structured as a layered pipeline with explicit responsibilities and invariants:
+Base predictor score
 
-User Input
-  → CompletionContext
-    → Predictors (raw signals)
-      → Weighted Aggregation
-        → Rankers (ordering + learning)
-          → Suggestions + Explanations
+Learning / history adjustment
+
+Final ranking score
+
+Contributing ranker
+
+## Debug (developer-only)
+$ aac debug he
+Input: he
+
+Scored:
+  hello        score=28.00
+  help         score=20.00
+
+Ranked:
+  hello        score=32.50
+  help         score=23.00
 
 
-Each stage is isolated. No layer reaches across boundaries or performs hidden work.
+The CLI is intentionally thin and delegates all logic to the core engine.
+
+# High-level architecture
+
+AAC is structured as a layered pipeline with explicit responsibilities and enforced invariants:
 
 User Input
    ↓
@@ -46,9 +94,10 @@ Rankers (ordering + learning)
 Final Suggestions + Explanations
 
 
-# Design principles
+Each stage is isolated. No layer reaches across boundaries or performs hidden work.
 
-## Single source of truth
+# Design principles
+Single source of truth
 
 - History is owned by the engine
 - Rankers may read from or learn from history, but do not own it
@@ -63,36 +112,33 @@ The system explicitly distinguishes between:
 - Prediction: generating candidate suggestions with raw scores
 - Ranking: ordering those candidates and applying learning or normalization
 
-Predictors never rank and rankers never generate suggestions.
-This separation allows each concern to evolve independently and remain testable.
+Predictors never rank, and rankers never generate suggestions. This separation keeps each concern testable and independently evolvable.
 
 ## Explainability as a first-class invariant
 
 AAC enforces a strict explanation model:
 
-- PredictorExplanation represents raw, unnormalized signals
-- RankingExplanation represents the final user-facing rationale
+- Predictor explanations represent raw, unnormalized signals produced upstream
+- Ranking explanations represent the final, user-facing rationale
 
-Explanations always correspond to the final ranked output, not intermediate or discarded values. If a score exists, it can be explained.
+Explanations always correspond to the final ranked output. If a score exists, it can be explained.
 
 ## Immutability at boundaries
 
-Core domain objects are immutable:
-
+Core domain objects are treated as immutable at system boundaries:
 - CompletionContext
 - Suggestion
 - ScoredSuggestion
 
-Rankers return new orderings rather than mutating input. This encourages determinism, safe composition, and predictable behavior under extension.
+Rankers return new orderings rather than mutating inputs. This encourages determinism, safe composition, and predictable behavior under extension.
 
 # Component responsibilities
 ## Predictors
 
 Predictors are independent signal generators. They:
-
 - Generate candidate suggestions
 - Assign raw scores
-- May optionally emit PredictorExplanation
+- May optionally emit predictor explanations
 - Do not rank, normalize, or learn
 - Must not mutate shared state
 
@@ -100,41 +146,37 @@ Examples include prefix matchers, trie-based lookups, frequency biasing, or hist
 
 ## Engine
 
-The AutocompleteEngine orchestrates the entire pipeline. It:
-
-- Owns the lifecycle of CompletionContext and History
+The AutocompleteEngine orchestrates the pipeline. It:
+- Owns the lifecycle of CompletionContext and history
 - Aggregates and weights predictor output
 - Applies rankers sequentially
 - Enforces architectural invariants
 - Exposes a minimal, stable public API
 
-The engine contains no domain-specific logic, only coordination and validation.
+The engine contains no domain-specific logic - only coordination and validation.
 
 ## Rankers
 
 Rankers are responsible for ordering and optional learning. They:
-
 - Reorder existing suggestions
+- May rescore suggestions as part of normalization or learning
 - Must not add or remove candidates
-- May apply learning, decay, or normalization
 - Must preserve determinism and finite scores
 - May read from history but do not own it
-- Rankers may rescore suggestions as part of normalization or learning, but must not add or remove candidates.
 
 Rankers are composable and applied sequentially.
 
 ## Explanations
 
 Explanations are:
-
 - Aggregated across rankers
-- Always consistent with final ranking
+- Always consistent with the final ranking
 - Exportable in JSON-safe form
 - Additive over time (no breaking removals)
 
-This makes the system suitable for developer tooling, debugging, and API consumption.
+This makes the system suitable for debugging, developer tooling, and API consumption.
 
-## Public API
+# Public API
 
 The following engine methods are considered stable:
 
@@ -142,49 +184,34 @@ The following engine methods are considered stable:
 - AutocompleteEngine.explain(text: str) -> list[RankingExplanation]
 - AutocompleteEngine.explain_as_dicts(text: str) -> list[dict]
 - AutocompleteEngine.record_selection(text: str, value: str)
-- AutocompleteEngine.history  # read-only access
+- AutocompleteEngine.history (read-only)
 
-Semi-internal (documented, but not for end users):
+Documented but semi-internal:
 
 - AutocompleteEngine.predict_scored(ctx: CompletionContext)
 
-Internal/developer-only:
+Internal / developer-only:
 
 - Debug and pipeline introspection utilities
 - Unranked scoring helpers
 
 Only documented methods should be used by external consumers.
 
-## CLI
-
-AAC includes a minimal CLI to demonstrate usability and integration.
-
-Examples:
-
-aac suggest pri
-aac explain pri
-aac record pri print
-aac debug pri
-
-
-The CLI is intentionally thin and delegates all logic to the core engine.
-
 # Extension points
 
-AAC is designed to grow without modification to existing components.
+AAC is designed to grow without modifying existing components.
 
 ## Custom predictors
 
-To add a predictor, implement the Predictor protocol:
-
-- Return ScoredSuggestion
+To add a predictor:
+- Implement the Predictor protocol
+- Return scored suggestions
 - Avoid shared mutable state
-- Emit PredictorExplanation when possible
+- Emit explanations when possible
 
 ## Custom rankers
 
 To add a ranker:
-
 - Implement the Ranker interface
 - Preserve determinism
 - Do not add or remove suggestions
@@ -192,7 +219,7 @@ To add a ranker:
 
 ## Weighted composition
 
-Predictors and rankers can be weighted externally (e.g WeightedPredictor) to tune influence without modifying internal logic.
+Predictors and rankers can be weighted externally (e.g WeightedPredictor) to tune influence without changing internal logic.
 
 ## Stability guarantees
 
@@ -207,8 +234,7 @@ These guarantees make the system safe to extend and reason about.
 
 ## Design scaling
 
-The system is intentionally generic and domain-agnostic. Although demonstrated as an autocomplete engine, the same architecture supports:
-
+Although demonstrated as an autocomplete engine, the same architecture supports:
 - Search ranking
 - Recommendation systems
 - Query completion
@@ -216,31 +242,27 @@ The system is intentionally generic and domain-agnostic. Although demonstrated a
 
 ## Non-goals
 
-Clarity, correctness, and explainability are prioritized over raw performance. CLI and storage layers are intentionally thin and integration-tested manually; core logic is exhaustively unit-tested. This project intentionally does not aim to:
-
+Clarity, correctness, and explainability are prioritized over raw performance. This project intentionally does not aim to:
 - Be a full ML framework
 - Optimize for maximum throughput
 - Provide a UI or frontend
 - Compete with large-scale search engines
 
-
 ## Tradeoffs
 
-- Clarity over performance: explicit wiring and invariants are favored over micro-optimizations
+- Clarity over performance: explicit wiring and invariants over micro-optimizations
 - Determinism over stochastic models: no randomness or opaque ML
 - Explicit learning: learning signals are bounded and optional
 
 ## Testing and coverage
 
-Core domain logic (engine, predictors, rankers, history, explanation) is fully unit-tested.
+Core domain logic (engine, predictors, rankers, history, explanations) is fully unit-tested.
 
-CLI, configuration, and persistence layers are intentionally thin and not exhaustively unit-tested, as they primarily delegate to the core engine. This mirrors real production systems, where business logic receives the strongest testing guarantees.
-
-
+CLI and integration layers are intentionally thin and not exhaustively tested, as they primarily delegate to the core engine. This mirrors real production systems, where business logic receives the strongest guarantees.
 
 ## Current limitations
 
-- History persistence is simple and file-based
+History persistence is simple and file-based
 - No batching or streaming APIs
 - No large-scale indexing structures
 - Predictors are hand-authored, not learned
@@ -249,60 +271,7 @@ CLI, configuration, and persistence layers are intentionally thin and not exhaus
 ## Future work
 
 Possible extensions include:
-
 - Pluggable persistence backends (SQLite, Redis)
 - Batch or streaming scoring APIs
 - Learned predictor weights
 - Time-decayed history models
-
-
-## Demo
-
-Adaptive Autocomplete learns from usage and explains its decisions.
-
-### Basic suggestion
-
-$ aac suggest he
-hello
-help
-helium
-hero
-
-### Learning from selection
-
-$ aac record he hello
-Recorded selection 'hello' for input 'he'
-
-$ aac suggest he
-hello
-help
-helium
-hero
-
-(The ranking adapts based on usage history.)
-
-### Explanation
-
-$ aac explain he
-hello        base= 28.00 history=+ 4.50 = 32.50 [source=score]
-help         base= 20.00 history=+ 3.00 = 23.00 [source=score]
-helium       base=  4.00 history=  0.00 =  4.00 [source=score]
-
-Each suggestion includes:
-- Base predictor score
-- Learning / history adjustment
-- Final ranking score
-- Source ranker
-
-### Debug (developer-only)
-
-$ aac debug he
-Input: he
-
-Scored:
-  hello        score=28.00
-  help         score=20.00
-
-Ranked:
-  hello        score=32.50
-  help         score=23.00
