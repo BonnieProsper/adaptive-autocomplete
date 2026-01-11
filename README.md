@@ -33,6 +33,19 @@ User Input
 
 Each stage is isolated. No layer reaches across boundaries or performs hidden work.
 
+User Input
+   ↓
+CompletionContext
+   ↓
+Predictors ──▶ ScoredSuggestion (raw signals)
+   ↓
+Weighted Aggregation
+   ↓
+Rankers (ordering + learning)
+   ↓
+Final Suggestions + Explanations
+
+
 # Design principles
 
 ## Single source of truth
@@ -232,6 +245,15 @@ CLI, configuration, and persistence layers are intentionally thin and not exhaus
 - No large-scale indexing structures
 - Predictors are hand-authored, not learned
 - No domain-specific tuning out of the box
+
+## Future work
+
+Possible extensions include:
+
+- Pluggable persistence backends (SQLite, Redis)
+- Batch or streaming scoring APIs
+- Learned predictor weights
+- Time-decayed history models
 
 
 ## Demo
