@@ -1,10 +1,23 @@
 # Adaptive Autocomplete Core (AAC)
 
-AAC is a modular, explainable autocomplete and ranking engine designed as a production-grade backend system.
+Adaptive Autocomplete Core (AAC) is a modular, explainable autocomplete and ranking engine designed to demonstrate how production systems generate, rank, learn from, and explain suggestions in a deterministic and auditable way.
 
 The project focuses on architecture, correctness, and extensibility over features, emphasising clear boundaries between signal generation, aggregation, ranking, learning, and explanation while remaining deterministic, testable, and inspectable.
 
-This repository is intentionally scoped and opinionated. Every design decision exists to make the system easier to reason about, extend, and audit.
+This repository is intentionally scoped and opinionated. Design decisions are intentionally made to favor clarity, extensibility, and auditability.
+
+## What this project demonstrates
+
+This project is intentionally designed to showcase:
+
+- Clean separation of concerns in a non-trivial backend system
+- Deterministic ranking pipelines with learning and explainability
+- Explicit architectural invariants enforced at runtime
+- Safe extension via composition rather than inheritance
+- Production-quality Python: typing, testing, linting, and CI
+
+While the demo is an autocomplete engine, the underlying architecture directly maps to real-world search, recommendation, and ranking systems.
+
 
 ## High-level architecture
 
@@ -93,6 +106,7 @@ Rankers are responsible for ordering and optional learning. They:
 - May apply learning, decay, or normalization
 - Must preserve determinism and finite scores
 - May read from history but do not own it
+- Rankers may rescore suggestions as part of normalization or learning, but must not add or remove candidates.
 
 Rankers are composable and applied sequentially.
 
@@ -115,16 +129,16 @@ The following engine methods are considered stable:
 - AutocompleteEngine.explain(text: str) -> list[RankingExplanation]
 - AutocompleteEngine.explain_as_dicts(text: str) -> list[dict]
 - AutocompleteEngine.record_selection(text: str, value: str)
-- AutocompleteEngine.history  # read-only
+- AutocompleteEngine.history  # read-only access
 
-Semi-internal:
+Semi-internal (documented, but not for end users):
 
-- complete(ctx) — lower-level scoring API
+- AutocompleteEngine.predict_scored(ctx: CompletionContext)
 
-Internal/developer-only
+Internal/developer-only:
 
-- predict(ctx) (legacy compatibility)
 - Debug and pipeline introspection utilities
+- Unranked scoring helpers
 
 Only documented methods should be used by external consumers.
 
@@ -202,6 +216,13 @@ Clarity, correctness, and explainability are prioritized over raw performance. C
 - Clarity over performance: explicit wiring and invariants are favored over micro-optimizations
 - Determinism over stochastic models: no randomness or opaque ML
 - Explicit learning: learning signals are bounded and optional
+
+## Testing and coverage
+
+Core domain logic (engine, predictors, rankers, history, explanation) is fully unit-tested.
+
+CLI, configuration, and persistence layers are intentionally thin and not exhaustively unit-tested, as they primarily delegate to the core engine. This mirrors real production systems, where business logic receives the strongest testing guarantees.
+
 
 
 ## Current limitations
