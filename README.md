@@ -211,3 +211,55 @@ Clarity, correctness, and explainability are prioritized over raw performance. T
 - No large-scale indexing structures
 - Predictors are hand-authored, not learned
 - No domain-specific tuning out of the box
+
+
+## Demo
+
+Adaptive Autocomplete learns from usage and explains its decisions.
+
+### Basic suggestion
+
+$ aac suggest he
+hello
+help
+helium
+hero
+
+### Learning from selection
+
+$ aac record he hello
+Recorded selection 'hello' for input 'he'
+
+$ aac suggest he
+hello
+help
+helium
+hero
+
+(The ranking adapts based on usage history.)
+
+### Explanation
+
+$ aac explain he
+hello        base= 28.00 history=+ 4.50 = 32.50 [source=score]
+help         base= 20.00 history=+ 3.00 = 23.00 [source=score]
+helium       base=  4.00 history=  0.00 =  4.00 [source=score]
+
+Each suggestion includes:
+- Base predictor score
+- Learning / history adjustment
+- Final ranking score
+- Source ranker
+
+### Debug (developer-only)
+
+$ aac debug he
+Input: he
+
+Scored:
+  hello        score=28.00
+  help         score=20.00
+
+Ranked:
+  hello        score=32.50
+  help         score=23.00
