@@ -151,9 +151,10 @@ class AutocompleteEngine:
             )
 
         for s in ranked:
-            assert math.isfinite(s.score), (
-                f"Non-finite score for '{s.suggestion.value}': {s.score}"
-            )
+            if not math.isfinite(s.score):
+                raise ValueError(
+                    f"Non-finite score for '{s.suggestion.value}': {s.score}"
+                )
 
         return ranked
 
@@ -188,18 +189,19 @@ class AutocompleteEngine:
         """
         return self._apply_ranking(ctx, self._score(ctx))
 
-    def predict_scored_unranked(
+    def _predict_scored_unranked(
         self, ctx: CompletionContext
     ) -> list[ScoredSuggestion]:
         """
-        Return scored suggestions WITHOUT ranking.
+        INTERNAL: Return scored suggestions WITHOUT ranking.
 
         WARNING:
             - Does not apply rankers
             - Does not enforce ranking invariants
-            - Intended for internal / diagnostic use only
+            - Intended for diagnostics / internal inspection only
         """
         return self._score(ctx)
+
 
     # ------------------------------------------------------------------
     # Explanation
