@@ -5,5 +5,8 @@
   "he": {
     "hello": 10,
     "help": 4
+  },
+  "py": {
+    "pytest": 2
   }
 }
