@@ -204,3 +204,11 @@ class History:
             prefix: dict(values)
             for prefix, values in snapshot.items()
         }
+    
+    def replace(self, other: "History") -> None:
+        """
+        Replace contents with another History instance.
+        """
+        self._entries.clear()
+        self._entries.extend(other._entries)
+

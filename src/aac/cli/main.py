@@ -3,8 +3,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from aac import engine
 from aac.cli import debug, explain, record, suggest
+from aac.domain import history
 from aac.cli.app import build_engine
+from aac.engine import engine
+from aac.presets import available_presets
 from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
@@ -19,7 +23,8 @@ def main() -> None:
 
     parser.add_argument(
         "--preset",
-        default="developer",
+        default=available_presets()[0],
+        choices=available_presets(),
         help="Autocomplete engine preset",
     )
 
@@ -53,9 +58,11 @@ def main() -> None:
     history = store.load()
 
     engine = build_engine(
-        history=history,
-        preset=args.preset,
+    preset=args.preset,
     )
+
+    # hydrate engine history from store
+    engine.history.replace(history)
 
     dispatch = {
         "suggest": lambda: suggest.run(
