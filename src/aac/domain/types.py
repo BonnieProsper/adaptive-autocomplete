@@ -78,6 +78,7 @@ class PredictorExplanation:
     value: str
     score: float
     source: str
+    confidence: float
     
 
 @dataclass(frozen=True)

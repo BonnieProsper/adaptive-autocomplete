@@ -3,12 +3,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from aac import engine
 from aac.cli import debug, explain, record, suggest
-from aac.domain import history
-from aac.cli.app import build_engine
-from aac.engine import engine
-from aac.presets import available_presets
+from aac.presets import available_presets, create_engine
 from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
@@ -37,6 +33,8 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    subparsers.add_parser("presets")
+
     suggest_p = subparsers.add_parser("suggest")
     suggest_p.add_argument("text")
     suggest_p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
@@ -54,15 +52,15 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    if args.command == "presets":
+        print("\n".join(available_presets()))
+        return
+
     store = JsonHistoryStore(args.history_path)
-    history = store.load()
+    persisted_history = store.load()
 
-    engine = build_engine(
-    preset=args.preset,
-    )
-
-    # hydrate engine history from store
-    engine.history.replace(history)
+    engine = create_engine(args.preset)
+    engine.history.replace(persisted_history)
 
     dispatch = {
         "suggest": lambda: suggest.run(
@@ -88,3 +86,4 @@ def main() -> None:
     }
 
     dispatch[args.command]()
+

@@ -208,7 +208,13 @@ class History:
     def replace(self, other: "History") -> None:
         """
         Replace contents with another History instance.
+        Intended for persistence hydration.
         """
         self._entries.clear()
         self._entries.extend(other._entries)
 
+# TODO, where to add:
+"""
+if timestamp.tzinfo is None:
+    raise ValueError("History timestamps must be timezone-aware")
+"""
