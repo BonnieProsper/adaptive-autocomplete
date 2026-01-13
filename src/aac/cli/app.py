@@ -1,19 +1,31 @@
 from __future__ import annotations
 
-from aac.engine import AutocompleteEngine
-from aac.presets import create_engine
+from aac.domain.history import History
+from aac.engine.engine import AutocompleteEngine
+from aac.presets import get_preset
 
 
 def build_engine(
     *,
     preset: str,
+    history: History | None = None,
 ) -> AutocompleteEngine:
     """
     Construct an AutocompleteEngine from a named preset.
 
-    Presets fully define:
+    The application layer is responsible for:
+    - selecting the preset
+    - hydrating persistence (History)
+
+    Presets define:
     - predictors
     - rankers
     - learning behavior
     """
-    return create_engine(preset)
+    preset_def = get_preset(preset)
+
+    return AutocompleteEngine(
+        predictors=preset_def.predictors,
+        ranker=preset_def.rankers,
+        history=history,
+    )
