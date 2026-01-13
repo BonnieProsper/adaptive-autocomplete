@@ -11,24 +11,24 @@ from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
 from aac.ranking.explanation import RankingExplanation
 
-# Decay function moved from domain
+
+# ---------------------------------------------------------------------
+# Decay function
+# ---------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class DecayFunction:
     """
-    Time-based decay function.
+    Time-based exponential decay.
 
-    Converts elapsed time (seconds) into a weight in [0, 1].
-
-    Properties: Monotonic decreasing, deterministic, explainable
+    weight = 0.5 ** (elapsed_seconds / half_life_seconds)
     """
     half_life_seconds: float
 
     def weight(self, *, now: datetime, event_time: datetime) -> float:
-        """
-        Compute decay weight for an event timestamp.
-        Uses exponential decay: weight = 0.5 ** (elapsed / half_life)
-        """
+        if event_time.tzinfo is None:
+            raise ValueError("History timestamps must be timezone-aware")
+
         if event_time > now:
             return 1.0
 
@@ -40,20 +40,20 @@ class DecayFunction:
 
 
 def utcnow() -> datetime:
-    """Centralized time source (UTC, timezone-aware)."""
     return datetime.now(tz=timezone.utc)
 
 
+# ---------------------------------------------------------------------
+# Ranker
+# ---------------------------------------------------------------------
+
 class DecayRanker(Ranker, LearnsFromHistory):
     """
-    Ranker that boosts suggestions based on recency-weighted history.
+    Ranker that boosts suggestions using recency-weighted history.
 
-    Learning model:
-    - Each historical event contributes a decayed weight
-    - Total boost = sum(decayed weights) * weight
-    - Fully explainable and bounded
-
-    Intended to be composed with LearningRanker, not to replace it.
+    - Deterministic
+    - Bounded
+    - Fully explainable
     """
 
     def __init__(
@@ -64,26 +64,16 @@ class DecayRanker(Ranker, LearnsFromHistory):
         weight: float = 1.0,
         now: datetime | None = None,
     ) -> None:
-        """
-        Parameters:
-        - history: shared selection history
-        - decay: decay function (half-life controlled)
-        - weight: scaling factor for decay signal
-        - now: injected clock for determinism/testing
-        """
         self.history = history
         self._decay = decay
         self._weight = weight
         self._now = now
 
-    def _current_time(self) -> datetime:
+    def _now_utc(self) -> datetime:
         return self._now if self._now is not None else utcnow()
 
     def _decayed_counts(self, prefix: str) -> dict[str, float]:
-        """
-        Compute time-decayed counts per suggestion value.
-        """
-        now = self._current_time()
+        now = self._now_utc()
         counts: dict[str, float] = defaultdict(float)
 
         for entry in self.history.entries():
@@ -110,14 +100,21 @@ class DecayRanker(Ranker, LearnsFromHistory):
         if not decayed:
             return list(suggestions)
 
-        adjusted: list[tuple[float, ScoredSuggestion]] = []
+        ranked: list[ScoredSuggestion] = []
 
         for s in suggestions:
             boost = decayed.get(s.suggestion.value, 0.0) * self._weight
-            adjusted.append((s.score + boost, s))
+            ranked.append(
+                ScoredSuggestion(
+                    suggestion=s.suggestion,
+                    score=s.score + boost,
+                    explanation=s.explanation,
+                    trace=s.trace,
+                )
+            )
 
-        adjusted.sort(key=lambda t: t[0], reverse=True)
-        return [s for _, s in adjusted]
+        ranked.sort(key=lambda s: s.score, reverse=True)
+        return ranked
 
     def explain(
         self,
@@ -130,7 +127,6 @@ class DecayRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             boost = decayed.get(s.suggestion.value, 0.0) * self._weight
-
             explanations.append(
                 RankingExplanation(
                     value=s.suggestion.value,
