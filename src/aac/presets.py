@@ -61,6 +61,7 @@ def _default_engine(history: History | None) -> AutocompleteEngine:
 
 
 def _recency_boosted_engine(history: History | None) -> AutocompleteEngine:
+    """Engine with explicit recency bias applied at ranking time."""
     history = history or History()
 
     predictors = [
@@ -82,7 +83,7 @@ def _recency_boosted_engine(history: History | None) -> AutocompleteEngine:
     ]
 
     rankers = [
-        ScoreRanker(),
+        ScoreRanker(), # establish base relevance
         DecayRanker(
             history=history,
             decay=DecayFunction(half_life_seconds=3600),

@@ -14,17 +14,13 @@ from aac.domain.types import (
 
 class StaticPrefixPredictor(Predictor):
     """
-    Deterministic prefix-based predictor.
-
-    Performs a static prefix match against a fixed vocabulary.
-    Emits neutral scores; ranking is handled downstream.
+    Deterministic prefix-based predictor over a fixed vocabulary.
     """
 
-    name: str = "static_prefix"
+    name = "static_prefix"
 
     def __init__(self, vocabulary: Iterable[str]) -> None:
-        # Preserve order, remove duplicates
-        self._vocabulary: tuple[str, ...] = tuple(dict.fromkeys(vocabulary))
+        self._vocabulary = tuple(dict.fromkeys(vocabulary))
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
@@ -36,11 +32,7 @@ class StaticPrefixPredictor(Predictor):
         results: list[ScoredSuggestion] = []
 
         for word in self._vocabulary:
-            # Do not repeat exact matches
-            if word == prefix:
-                continue
-
-            if not word.startswith(prefix):
+            if word == prefix or not word.startswith(prefix):
                 continue
 
             results.append(
@@ -50,12 +42,12 @@ class StaticPrefixPredictor(Predictor):
                     explanation=PredictorExplanation(
                         value=word,
                         score=1.0,
+                        confidence=1.0,
                         source=self.name,
                     ),
                     trace=[
                         f"prefix='{prefix}'",
                         f"matched='{word}'",
-                        "score=1.0",
                     ],
                 )
             )
