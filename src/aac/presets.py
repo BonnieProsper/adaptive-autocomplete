@@ -166,3 +166,34 @@ def create_engine(preset: str) -> AutocompleteEngine:
     Prefer build_engine(...) in app layer.
     """
     return get_preset(preset).build(None)
+
+def describe_presets() -> str:
+    """
+    Human-readable description of all available presets.
+
+    Intended for CLI and documentation output.
+    """
+    lines: list[str] = []
+
+    for name in available_presets():
+        preset = PRESETS[name]
+        lines.append(f"{preset.name}")
+        lines.append(f"  {preset.description}")
+
+        # High-level behavioral hints (kept intentionally coarse)
+        if name == "default":
+            lines.append("  predictors: frequency, history")
+            lines.append("  ranking: score-based")
+            lines.append("  learning: enabled")
+        elif name == "recency":
+            lines.append("  predictors: frequency, history")
+            lines.append("  ranking: score + recency decay")
+            lines.append("  learning: enabled (time-aware)")
+        elif name == "stateless":
+            lines.append("  predictors: frequency")
+            lines.append("  ranking: score-based")
+            lines.append("  learning: disabled")
+
+        lines.append("")  # spacer
+
+    return "\n".join(lines).rstrip()

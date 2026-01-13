@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from aac.cli import debug, explain, record, suggest
-from aac.presets import available_presets, create_engine
+from aac.presets import available_presets, create_engine, describe_presets
 from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
@@ -21,7 +21,7 @@ def main() -> None:
         "--preset",
         default=available_presets()[0],
         choices=available_presets(),
-        help="Autocomplete engine preset",
+        help="Autocomplete engine preset (controls predictors, ranking, learning)",
     )
 
     parser.add_argument(
@@ -33,32 +33,37 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("presets")
+    subparsers.add_parser(
+        "presets",
+        help="List available presets and their behavior",
+    )
 
-    suggest_p = subparsers.add_parser("suggest")
+    suggest_p = subparsers.add_parser("suggest", help="Get autocomplete suggestions")
     suggest_p.add_argument("text")
     suggest_p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
 
-    explain_p = subparsers.add_parser("explain")
+    explain_p = subparsers.add_parser("explain", help="Explain why suggestions were ranked")
     explain_p.add_argument("text")
     explain_p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
 
-    record_p = subparsers.add_parser("record")
+    record_p = subparsers.add_parser("record", help="Record a user selection")
     record_p.add_argument("text")
     record_p.add_argument("value")
 
-    debug_p = subparsers.add_parser("debug")
+    debug_p = subparsers.add_parser("debug", help="Run the debug pipeline")
     debug_p.add_argument("text")
 
     args = parser.parse_args()
 
     if args.command == "presets":
-        print("\n".join(available_presets()))
+        print(describe_presets())
         return
 
+    # Load persisted history
     store = JsonHistoryStore(args.history_path)
     persisted_history = store.load()
 
+    # Build engine from preset and attach history
     engine = create_engine(args.preset)
     engine.history.replace(persisted_history)
 
@@ -86,4 +91,3 @@ def main() -> None:
     }
 
     dispatch[args.command]()
-
