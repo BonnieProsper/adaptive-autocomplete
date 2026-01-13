@@ -291,6 +291,35 @@ class AutocompleteEngine:
             "suggestions": [s.suggestion.value for s in ranked],
         }
 
+
+    # ------------------------------------------------------------------
+    # Introspection
+    # ------------------------------------------------------------------
+
+    def describe(self) -> dict[str, object]:
+        """
+        Return a human-readable description of the engine configuration.
+
+        Intended for:
+        - CLI inspection
+        - debugging
+        - documentation
+        """
+        return {
+            "predictors": [
+                {
+                    "name": wp.predictor.name,
+                    "weight": wp.weight,
+                }
+                for wp in self._predictors
+            ],
+            "rankers": [
+                r.__class__.__name__
+                for r in self._rankers
+            ],
+            "history_enabled": self._history is not None,
+        }
+
     # ------------------------------------------------------------------
 
     @property

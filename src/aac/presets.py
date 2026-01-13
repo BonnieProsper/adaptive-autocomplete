@@ -1,41 +1,93 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Callable
+
 from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
-from aac.pipelines.developer import build_developer_pipeline
-from aac.ranking.learning import LearningRanker
+from aac.predictors.frequency import FrequencyPredictor
+from aac.predictors.history import HistoryPredictor
+from aac.ranking.decay import DecayFunction, DecayRanker
 from aac.ranking.score import ScoreRanker
+from aac.domain.types import WeightedPredictor
 
 
-def developer_engine(
-    *,
-    vocabulary: list[str],
-    history: History | None = None,
-) -> AutocompleteEngine:
+# ---------------------------------------------------------------------
+# Preset definition
+# ---------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class EnginePreset:
     """
-    Developer-oriented autocomplete preset.
+    Named, validated engine composition.
 
-    Characteristics:
-    - Prefix + trie-based prediction
-    - History-aware personalization
-    - Balanced learning influence
-    - Stable, explainable ranking
-
-    This is the recommended default preset.
+    A preset represents intent, not configuration detail.
     """
+    name: str
+    description: str
+    build: Callable[[History | None], AutocompleteEngine]
+
+
+# ---------------------------------------------------------------------
+# Preset builders
+# ---------------------------------------------------------------------
+
+def _default_engine(history: History | None) -> AutocompleteEngine:
     history = history or History()
 
-    predictors = build_developer_pipeline(
-        vocabulary=vocabulary,
+    predictors = [
+        WeightedPredictor(
+            predictor=FrequencyPredictor(
+                frequencies={
+                    "hello": 100,
+                    "help": 80,
+                    "helium": 30,
+                    "hero": 50,
+                }
+            ),
+            weight=1.0,
+        ),
+        WeightedPredictor(
+            predictor=HistoryPredictor(history),
+            weight=1.5,
+        ),
+    ]
+
+    return AutocompleteEngine(
+        predictors=predictors,
+        ranker=[ScoreRanker()],
         history=history,
     )
 
+
+def _recency_boosted_engine(history: History | None) -> AutocompleteEngine:
+    """Engine with explicit recency bias applied at ranking time."""
+    history = history or History()
+
+    predictors = [
+        WeightedPredictor(
+            predictor=FrequencyPredictor(
+                frequencies={
+                    "hello": 100,
+                    "help": 80,
+                    "helium": 30,
+                    "hero": 50,
+                }
+            ),
+            weight=1.0,
+        ),
+        WeightedPredictor(
+            predictor=HistoryPredictor(history),
+            weight=1.0,
+        ),
+    ]
+
     rankers = [
-        ScoreRanker(),
-        LearningRanker(
+        ScoreRanker(), # establish base relevance
+        DecayRanker(
             history=history,
-            boost=0.75,
-            dominance_ratio=1.0,
+            decay=DecayFunction(half_life_seconds=3600),
+            weight=2.0,
         ),
     ]
 
@@ -44,3 +96,105 @@ def developer_engine(
         ranker=rankers,
         history=history,
     )
+
+
+def _stateless_engine(_: History | None) -> AutocompleteEngine:
+    predictors = [
+        WeightedPredictor(
+            predictor=FrequencyPredictor(
+                frequencies={
+                    "hello": 100,
+                    "help": 80,
+                    "helium": 30,
+                    "hero": 50,
+                }
+            ),
+            weight=1.0,
+        ),
+    ]
+
+    return AutocompleteEngine(
+        predictors=predictors,
+        ranker=ScoreRanker(),
+        history=History(),
+    )
+
+
+# ---------------------------------------------------------------------
+# Preset registry
+# ---------------------------------------------------------------------
+
+PRESETS: dict[str, EnginePreset] = {
+    "default": EnginePreset(
+        name="default",
+        description="Balanced frequency + history-based autocomplete",
+        build=_default_engine,
+    ),
+    "recency": EnginePreset(
+        name="recency",
+        description="History-aware autocomplete with time decay",
+        build=_recency_boosted_engine,
+    ),
+    "stateless": EnginePreset(
+        name="stateless",
+        description="Pure frequency-based autocomplete (no learning)",
+        build=_stateless_engine,
+    ),
+}
+
+
+# ---------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------
+
+def available_presets() -> list[str]:
+    return sorted(PRESETS.keys())
+
+
+def get_preset(name: str) -> EnginePreset:
+    try:
+        return PRESETS[name]
+    except KeyError:
+        raise ValueError(
+            f"Unknown preset '{name}'. "
+            f"Available presets: {', '.join(available_presets())}"
+        )
+
+
+def create_engine(preset: str) -> AutocompleteEngine:
+    """
+    Backwards-compatible factory.
+    Prefer build_engine(...) in app layer.
+    """
+    return get_preset(preset).build(None)
+
+def describe_presets() -> str:
+    """
+    Human-readable description of all available presets.
+
+    Intended for CLI and documentation output.
+    """
+    lines: list[str] = []
+
+    for name in available_presets():
+        preset = PRESETS[name]
+        lines.append(f"{preset.name}")
+        lines.append(f"  {preset.description}")
+
+        # High-level behavioral hints (kept intentionally coarse)
+        if name == "default":
+            lines.append("  predictors: frequency, history")
+            lines.append("  ranking: score-based")
+            lines.append("  learning: enabled")
+        elif name == "recency":
+            lines.append("  predictors: frequency, history")
+            lines.append("  ranking: score + recency decay")
+            lines.append("  learning: enabled (time-aware)")
+        elif name == "stateless":
+            lines.append("  predictors: frequency")
+            lines.append("  ranking: score-based")
+            lines.append("  learning: disabled")
+
+        lines.append("")  # spacer
+
+    return "\n".join(lines).rstrip()

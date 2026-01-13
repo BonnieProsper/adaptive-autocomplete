@@ -15,7 +15,7 @@ class HistoryEntry:
         prefix: The user input prefix at the time of selection.
         value: The completion value selected by the user.
         timestamp: When the selection occurred (UTC, timezone-aware).
-
+    
     Notes:
         - Entries are immutable once created.
         - Timestamps are always stored in UTC.
@@ -26,13 +26,19 @@ class HistoryEntry:
     value: str
     timestamp: datetime
 
+    def __post_init__(self) -> None:
+        if self.timestamp.tzinfo is None:
+            raise ValueError(
+                "HistoryEntry.timestamp must be timezone-aware (UTC)"
+            )
+
 
 class History:
     """
     Append-only store of user completion events.
 
-    Acts as the single source of truth for all learning signals in the system.
-
+    This is the single source of truth for all learning signals.
+    
     Design guarantees:
         - Entries are immutable once recorded
         - No deletion or in-place mutation
@@ -46,6 +52,10 @@ class History:
 
     def __init__(self) -> None:
         self._entries: list[HistoryEntry] = []
+
+    # ------------------------------------------------------------
+    # Recording
+    # ------------------------------------------------------------
 
     def record(
         self,
@@ -72,17 +82,20 @@ class History:
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
 
-        # Defensive boundary: History guarantees string keys
-        prefix_str = str(prefix)
-        value_str = str(value)
+        if timestamp.tzinfo is None:
+            raise ValueError("timestamp must be timezone-aware")
 
         self._entries.append(
             HistoryEntry(
-                prefix=prefix_str,
-                value=value_str,
+                prefix=str(prefix),
+                value=str(value),
                 timestamp=timestamp,
             )
         )
+
+    # ------------------------------------------------------------
+    # Read APIs
+    # ------------------------------------------------------------
 
     def entries(self) -> Sequence[HistoryEntry]:
         """
@@ -103,11 +116,10 @@ class History:
         Returns:
             A tuple of HistoryEntry objects.
         """
-        prefix_str = str(prefix)
-
+        prefix = str(prefix)
         return tuple(
-            entry for entry in self._entries
-            if entry.prefix == prefix_str
+            e for e in self._entries
+            if e.prefix == prefix
         )
 
     def counts_for_prefix(self, prefix: str) -> dict[str, int]:
@@ -123,12 +135,12 @@ class History:
         Returns:
             Mapping of completion value -> selection count.
         """
-        prefix_str = str(prefix)
+        prefix = str(prefix)
         counts: dict[str, int] = defaultdict(int)
 
-        for entry in self._entries:
-            if entry.prefix == prefix_str:
-                counts[entry.value] += 1
+        for e in self._entries:
+            if e.prefix == prefix:
+                counts[e.value] += 1
 
         return dict(counts)
 
@@ -149,15 +161,18 @@ class History:
         Returns:
             Mapping of completion value -> selection count.
         """
-        prefix_str = str(prefix)
+        if since.tzinfo is None:
+            raise ValueError("since must be timezone-aware")
+
+        prefix = str(prefix)
         counts: dict[str, int] = defaultdict(int)
 
-        for entry in self._entries:
-            if entry.prefix != prefix_str:
+        for e in self._entries:
+            if e.prefix != prefix:
                 continue
-            if entry.timestamp < since:
+            if e.timestamp < since:
                 continue
-            counts[entry.value] += 1
+            counts[e.value] += 1
 
         return dict(counts)
 
@@ -171,12 +186,15 @@ class History:
         Returns:
             Number of times the value was selected.
         """
-        value_str = str(value)
-
+        value = str(value)
         return sum(
-            1 for entry in self._entries
-            if entry.value == value_str
+            1 for e in self._entries
+            if e.value == value
         )
+
+    # ------------------------------------------------------------
+    # Persistence boundary
+    # ------------------------------------------------------------
 
     def snapshot(self) -> dict[str, dict[str, int]]:
         """
@@ -197,10 +215,19 @@ class History:
         """
         snapshot: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
-        for entry in self._entries:
-            snapshot[entry.prefix][entry.value] += 1
+        for e in self._entries:
+            snapshot[e.prefix][e.value] += 1
 
         return {
             prefix: dict(values)
             for prefix, values in snapshot.items()
         }
+
+    def replace(self, other: "History") -> None:
+        """
+        Replace contents with another History instance.
+        Intended for persistence hydration.
+        """
+        self._entries.clear()
+        self._entries.extend(other._entries)
+

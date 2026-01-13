@@ -2,34 +2,19 @@ from __future__ import annotations
 
 from aac.domain.history import History
 from aac.engine.engine import AutocompleteEngine
-from aac.presets import developer_engine
+from aac.presets import get_preset
 
 
 def build_engine(
     *,
+    preset: str,
     history: History,
-    preset: str = "developer",
 ) -> AutocompleteEngine:
     """
     Construct an AutocompleteEngine from a named preset.
 
-    Presets encapsulate:
-    - predictor pipeline
-    - ranking strategy
-    - learning behavior
+    The CLI/application layer owns persistence and hydration.
+    Presets define structure only.
     """
-    if preset == "developer":
-        return developer_engine(
-            vocabulary=[
-                "hello",
-                "help",
-                "helium",
-                "hero",
-                "heap",
-                "hex",
-                "height",
-            ],
-            history=history,
-        )
-
-    raise ValueError(f"Unknown engine preset: {preset}")
+    preset_def = get_preset(preset)
+    return preset_def.build(history)
