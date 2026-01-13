@@ -8,24 +8,13 @@ from aac.presets import get_preset
 def build_engine(
     *,
     preset: str,
-    history: History | None = None,
+    history: History,
 ) -> AutocompleteEngine:
     """
     Construct an AutocompleteEngine from a named preset.
 
-    The application layer is responsible for:
-    - selecting the preset
-    - hydrating persistence (History)
-
-    Presets define:
-    - predictors
-    - rankers
-    - learning behavior
+    The CLI/application layer owns persistence and hydration.
+    Presets define structure only.
     """
     preset_def = get_preset(preset)
-
-    return AutocompleteEngine(
-        predictors=preset_def.predictors,
-        ranker=preset_def.rankers,
-        history=history,
-    )
+    return preset_def.build(history)

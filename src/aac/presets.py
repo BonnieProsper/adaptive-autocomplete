@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from aac.domain.history import History
-from aac.engine import AutocompleteEngine
+from aac.engine.engine import AutocompleteEngine
 from aac.predictors.frequency import FrequencyPredictor
 from aac.predictors.history import HistoryPredictor
 from aac.ranking.decay import DecayFunction, DecayRanker
@@ -25,15 +25,15 @@ class EnginePreset:
     """
     name: str
     description: str
-    build: Callable[[], AutocompleteEngine]
+    build: Callable[[History | None], AutocompleteEngine]
 
 
 # ---------------------------------------------------------------------
 # Preset builders
 # ---------------------------------------------------------------------
 
-def _default_engine() -> AutocompleteEngine:
-    history = History()
+def _default_engine(history: History | None) -> AutocompleteEngine:
+    history = history or History()
 
     predictors = [
         WeightedPredictor(
@@ -53,19 +53,15 @@ def _default_engine() -> AutocompleteEngine:
         ),
     ]
 
-    rankers = [
-        ScoreRanker(),
-    ]
-
     return AutocompleteEngine(
         predictors=predictors,
-        ranker=rankers,
+        ranker=[ScoreRanker()],
         history=history,
     )
 
 
-def _recency_boosted_engine() -> AutocompleteEngine:
-    history = History()
+def _recency_boosted_engine(history: History | None) -> AutocompleteEngine:
+    history = history or History()
 
     predictors = [
         WeightedPredictor(
@@ -101,7 +97,7 @@ def _recency_boosted_engine() -> AutocompleteEngine:
     )
 
 
-def _stateless_engine() -> AutocompleteEngine:
+def _stateless_engine(_: History | None) -> AutocompleteEngine:
     predictors = [
         WeightedPredictor(
             predictor=FrequencyPredictor(
@@ -119,11 +115,12 @@ def _stateless_engine() -> AutocompleteEngine:
     return AutocompleteEngine(
         predictors=predictors,
         ranker=ScoreRanker(),
+        history=History(),
     )
 
 
 # ---------------------------------------------------------------------
-# Preset registry (change to dict)
+# Preset registry
 # ---------------------------------------------------------------------
 
 PRESETS: dict[str, EnginePreset] = {
@@ -153,11 +150,19 @@ def available_presets() -> list[str]:
     return sorted(PRESETS.keys())
 
 
-def create_engine(preset: str) -> AutocompleteEngine:
+def get_preset(name: str) -> EnginePreset:
     try:
-        return PRESETS[preset].build()
+        return PRESETS[name]
     except KeyError:
         raise ValueError(
-            f"Unknown preset '{preset}'. "
+            f"Unknown preset '{name}'. "
             f"Available presets: {', '.join(available_presets())}"
         )
+
+
+def create_engine(preset: str) -> AutocompleteEngine:
+    """
+    Backwards-compatible factory.
+    Prefer build_engine(...) in app layer.
+    """
+    return get_preset(preset).build(None)
