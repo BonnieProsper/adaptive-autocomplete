@@ -16,6 +16,8 @@ class HistoryPredictor(Predictor):
     Recall-based predictor driven by user selection history.
 
     Emits candidates previously selected by the user.
+    Score reflects raw usage frequency.
+    Confidence reflects dominance among historical matches.
     """
 
     name = "history"
@@ -38,8 +40,8 @@ class HistoryPredictor(Predictor):
         results: list[ScoredSuggestion] = []
 
         for value, count in counts.items():
-            confidence = count / max_count
             score = float(count)
+            confidence = count / max_count if max_count > 0 else 0.0
 
             results.append(
                 ScoredSuggestion(
@@ -57,5 +59,8 @@ class HistoryPredictor(Predictor):
         return results
 
     def record(self, ctx: CompletionContext | str, value: str) -> None:
+        """
+        Record user selection feedback for future recall.
+        """
         ctx = ensure_context(ctx)
         self._history.record(ctx.text, value)

@@ -14,7 +14,9 @@ class FrequencyPredictor(Predictor):
     """
     Suggests words based on observed global frequency.
 
-    Confidence is derived from normalized frequency.
+    This predictor represents a static, non-learning baseline signal.
+    Score reflects raw frequency magnitude.
+    Confidence reflects relative dominance among known frequencies.
     """
 
     name = "frequency"
@@ -28,19 +30,19 @@ class FrequencyPredictor(Predictor):
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
-        token = ctx.prefix()
+        prefix = ctx.prefix()
 
-        if not token:
+        if not prefix:
             return []
 
         results: list[ScoredSuggestion] = []
 
         for word, count in self._frequencies.items():
-            if not word.startswith(token):
+            if not word.startswith(prefix):
                 continue
 
-            confidence = count / self._max_freq
             score = float(count)
+            confidence = count / self._max_freq if self._max_freq > 0 else 0.0
 
             results.append(
                 ScoredSuggestion(
