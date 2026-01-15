@@ -276,3 +276,36 @@ Possible extensions include:
 - Learned predictor weights
 - Time-decayed history models
 
+## Real-world example: Command Palette Autocomplete
+
+AAC can be adapted to real systems without modifying the core engine.
+
+This example models an internal command palette (similar to VS Code or IDE command menus).
+
+### Signals
+- Prefix matching (static + trie)
+- Usage frequency
+- User selection history
+
+### Ranking behavior
+- Learns from selections
+- Applies time-based decay
+- Produces deterministic, explainable rankings
+
+### Demo
+
+$ aac suggest "gi" --preset command-palette
+git_commit
+git_status
+git_push
+
+$ aac record "gi" "git_commit" --preset command-palette
+
+$ aac suggest "gi" --preset command-palette
+git_commit
+git_status
+git_push
+
+$ aac explain "gi" --preset command-palette
+git_commit    base=12.0 history=+3.0 =15.0 [source=learning]
+git_status    base=10.0 history=+0.0 =10.0 [source=score]

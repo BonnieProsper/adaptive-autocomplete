@@ -50,8 +50,6 @@ class Trie:
 
         if node.is_terminal and node.value is not None:
             out.append(node.value)
-            if len(out) >= limit:
-                return
 
         for key in sorted(node.children):
             self._collect(node.children[key], out, limit)
@@ -62,14 +60,9 @@ class Trie:
 class TriePrefixPredictor(Predictor):
     """
     Prefix predictor backed by a trie for efficient lookup.
-
-    Responsibilities:
-    - Efficient prefix recall
-    - Deterministic ordering
-    - Neutral base scoring
     """
 
-    name: str = "trie_prefix"
+    name = "trie_prefix"
 
     def __init__(self, words: Iterable[str], *, max_results: int = 10) -> None:
         self._trie = Trie(words)
@@ -83,11 +76,9 @@ class TriePrefixPredictor(Predictor):
             return []
 
         matches = self._trie.find_prefix(prefix, limit=self._max_results)
-
         results: list[ScoredSuggestion] = []
 
         for word in matches:
-            # Do not repeat exact matches
             if word == prefix:
                 continue
 
@@ -98,13 +89,9 @@ class TriePrefixPredictor(Predictor):
                     explanation=PredictorExplanation(
                         value=word,
                         score=1.0,
+                        confidence=1.0,
                         source=self.name,
                     ),
-                    trace=[
-                        f"prefix='{prefix}'",
-                        f"matched='{word}'",
-                        "score=1.0",
-                    ],
                 )
             )
 

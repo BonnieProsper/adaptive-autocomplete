@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Callable
+
 from aac.domain.history import History
 from aac.domain.types import WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
@@ -17,29 +20,75 @@ from aac.domain.types import WeightedPredictor
 @dataclass(frozen=True)
 class EnginePreset:
     """
-    Developer-oriented autocomplete preset.
+    Named, validated engine composition.
 
-    Characteristics:
-    - Prefix + trie-based prediction
-    - History-aware personalization
-    - Balanced learning influence
-    - Stable, explainable ranking
-
-    This is the recommended default preset.
+    A preset represents intent, not configuration detail.
     """
+    name: str
+    description: str
+    build: Callable[[History | None], AutocompleteEngine]
+
+
+# ---------------------------------------------------------------------
+# Preset builders
+# ---------------------------------------------------------------------
+
+def _default_engine(history: History | None) -> AutocompleteEngine:
     history = history or History()
 
-    predictors = build_developer_pipeline(
-        vocabulary=vocabulary,
+    predictors = [
+        WeightedPredictor(
+            predictor=FrequencyPredictor(
+                frequencies={
+                    "hello": 100,
+                    "help": 80,
+                    "helium": 30,
+                    "hero": 50,
+                }
+            ),
+            weight=1.0,
+        ),
+        WeightedPredictor(
+            predictor=HistoryPredictor(history),
+            weight=1.5,
+        ),
+    ]
+
+    return AutocompleteEngine(
+        predictors=predictors,
+        ranker=[ScoreRanker()],
         history=history,
     )
+
+
+def _recency_boosted_engine(history: History | None) -> AutocompleteEngine:
+    """Engine with explicit recency bias applied at ranking time."""
+    history = history or History()
+
+    predictors = [
+        WeightedPredictor(
+            predictor=FrequencyPredictor(
+                frequencies={
+                    "hello": 100,
+                    "help": 80,
+                    "helium": 30,
+                    "hero": 50,
+                }
+            ),
+            weight=1.0,
+        ),
+        WeightedPredictor(
+            predictor=HistoryPredictor(history),
+            weight=1.0,
+        ),
+    ]
 
     rankers = [
         ScoreRanker(), # establish base relevance
         DecayRanker(
             history=history,
-            boost=0.75,
-            dominance_ratio=1.0,
+            decay=DecayFunction(half_life_seconds=3600),
+            weight=2.0,
         ),
     ]
 

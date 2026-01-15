@@ -15,31 +15,33 @@ class HistoryPredictor(Predictor):
     """
     Recall-based predictor driven by user selection history.
 
-    Responsibility:
-    - Introduces previously selected values as candidates
-    - Does NOT perform ranking or dominance control
-    - LearningRanker is responsible for ordering and preference shaping
+    Emits candidates previously selected by the user.
+    Score reflects raw usage frequency.
+    Confidence reflects dominance among historical matches.
     """
+
     name = "history"
 
-    def __init__(self, history: History, weight: float = 1.0) -> None:
+    def __init__(self, history: History) -> None:
         self._history = history
-        self._weight = weight
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
-        token = ctx.text.rstrip().split()[-1] if ctx.text else ""
-        if not token:
+        prefix = ctx.prefix()
+
+        if not prefix:
             return []
 
-        counts = self._history.counts_for_prefix(token)
+        counts = self._history.counts_for_prefix(prefix)
         if not counts:
             return []
 
+        max_count = max(counts.values())
         results: list[ScoredSuggestion] = []
 
         for value, count in counts.items():
-            score = float(count) * self._weight
+            score = float(count)
+            confidence = count / max_count if max_count > 0 else 0.0
 
             results.append(
                 ScoredSuggestion(
@@ -49,6 +51,7 @@ class HistoryPredictor(Predictor):
                         value=value,
                         score=score,
                         source=self.name,
+                        confidence=confidence,
                     ),
                 )
             )
@@ -57,7 +60,7 @@ class HistoryPredictor(Predictor):
 
     def record(self, ctx: CompletionContext | str, value: str) -> None:
         """
-        Record user selection feedback for recall-based learning.
+        Record user selection feedback for future recall.
         """
         ctx = ensure_context(ctx)
         self._history.record(ctx.text, value)

@@ -13,35 +13,48 @@ from aac.domain.types import (
 class FrequencyPredictor(Predictor):
     """
     Suggests words based on observed global frequency.
+
+    This predictor represents a static, non-learning baseline signal.
+    Score reflects raw frequency magnitude.
+    Confidence reflects relative dominance among known frequencies.
     """
+
     name = "frequency"
 
     def __init__(self, frequencies: dict[str, int]) -> None:
-        self._freq = dict(frequencies)
+        if not frequencies:
+            raise ValueError("frequencies must not be empty")
+
+        self._frequencies = dict(frequencies)
+        self._max_freq = max(frequencies.values())
 
     def predict(self, ctx: CompletionContext | str) -> list[ScoredSuggestion]:
         ctx = ensure_context(ctx)
+        prefix = ctx.prefix()
 
-        token = ctx.text.rstrip().split()[-1] if ctx.text else ""
-        if not token:
+        if not prefix:
             return []
 
         results: list[ScoredSuggestion] = []
 
-        for word, count in self._freq.items():
-            if word.startswith(token):
-                score = float(count)
+        for word, count in self._frequencies.items():
+            if not word.startswith(prefix):
+                continue
 
-                results.append(
-                    ScoredSuggestion(
-                        suggestion=Suggestion(value=word),
+            score = float(count)
+            confidence = count / self._max_freq if self._max_freq > 0 else 0.0
+
+            results.append(
+                ScoredSuggestion(
+                    suggestion=Suggestion(value=word),
+                    score=score,
+                    explanation=PredictorExplanation(
+                        value=word,
                         score=score,
-                        explanation=PredictorExplanation(
-                            value=word,
-                            score=score,
-                            source=self.name,
-                        ),
-                    )
+                        source=self.name,
+                        confidence=confidence,
+                    ),
                 )
+            )
 
         return results
