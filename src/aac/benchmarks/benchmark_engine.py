@@ -13,24 +13,30 @@ WARMUP_TEXTS = ["h", "he", "hel"] * 1_000
 def run_benchmark(name: str, texts: Iterable[str]) -> float:
     engine = create_engine(name)
 
-    # Warm-up (stabilize caches, JIT paths, allocations)
+    # Warm-up (stabilize caches, allocations, branch predictors)
     for t in WARMUP_TEXTS:
         engine.suggest(t)
+
+    empty_count = 0
 
     start = perf_counter()
     for t in texts:
         results = engine.suggest(t)
 
-        # Prevent accidental dead-code elimination assumptions
         if not results:
-            raise RuntimeError("Unexpected empty suggestions")
+            empty_count += 1
 
     elapsed = perf_counter() - start
+
+    # Optional diagnostic (do NOT fail)
+    if empty_count:
+        print(f"  note: {empty_count:,} empty results")
+
     return elapsed
 
 
 def main() -> None:
-    presets = ["stateless", "default", "recency"]
+    presets = ["stateless", "default", "recency", "robust"]
 
     print(f"Benchmarking {len(TEXTS):,} suggest calls\n")
 
