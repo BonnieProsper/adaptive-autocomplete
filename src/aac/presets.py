@@ -8,9 +8,9 @@ from aac.domain.types import WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
 from aac.predictors.frequency import FrequencyPredictor
 from aac.predictors.history import HistoryPredictor
+from aac.predictors.edit_distance import EditDistancePredictor
 from aac.ranking.decay import DecayFunction, DecayRanker
 from aac.ranking.score import ScoreRanker
-from aac.domain.types import WeightedPredictor
 
 
 # ---------------------------------------------------------------------
@@ -84,11 +84,73 @@ def _recency_boosted_engine(history: History | None) -> AutocompleteEngine:
     ]
 
     rankers = [
-        ScoreRanker(), # establish base relevance
+        ScoreRanker(),  # establish base relevance
         DecayRanker(
             history=history,
             decay=DecayFunction(half_life_seconds=3600),
             weight=2.0,
+        ),
+    ]
+
+    return AutocompleteEngine(
+        predictors=predictors,
+        ranker=rankers,
+        history=history,
+    )
+
+
+def _robust_engine(history: History | None) -> AutocompleteEngine:
+    """
+    Production-oriented engine:
+    - Frequency baseline
+    - Learned user behavior
+    - Typo tolerance
+    - Recency-aware ranking
+    """
+    history = history or History()
+
+    vocabulary = [
+        "hello",
+        "help",
+        "helium",
+        "hero",
+        "hex",
+        "heap",
+    ]
+
+    predictors = [
+        WeightedPredictor(
+            predictor=FrequencyPredictor(
+                frequencies={
+                    "hello": 100,
+                    "help": 80,
+                    "helium": 30,
+                    "hero": 50,
+                    "hex": 20,
+                    "heap": 25,
+                }
+            ),
+            weight=1.0,
+        ),
+        WeightedPredictor(
+            predictor=HistoryPredictor(history),
+            weight=1.2,
+        ),
+        WeightedPredictor(
+            predictor=EditDistancePredictor(
+                vocabulary=vocabulary,
+                max_distance=2,
+            ),
+            weight=0.4,  # intentionally weak fallback signal
+        ),
+    ]
+
+    rankers = [
+        ScoreRanker(),
+        DecayRanker(
+            history=history,
+            decay=DecayFunction(half_life_seconds=3600),
+            weight=1.5,
         ),
     ]
 
@@ -136,6 +198,11 @@ PRESETS: dict[str, EnginePreset] = {
         description="History-aware autocomplete with time decay",
         build=_recency_boosted_engine,
     ),
+    "robust": EnginePreset(
+        name="robust",
+        description="Production-grade autocomplete with typo tolerance and recency learning",
+        build=_robust_engine,
+    ),
     "stateless": EnginePreset(
         name="stateless",
         description="Pure frequency-based autocomplete (no learning)",
@@ -169,6 +236,7 @@ def create_engine(preset: str) -> AutocompleteEngine:
     """
     return get_preset(preset).build(None)
 
+
 def describe_presets() -> str:
     """
     Human-readable description of all available presets.
@@ -182,7 +250,6 @@ def describe_presets() -> str:
         lines.append(f"{preset.name}")
         lines.append(f"  {preset.description}")
 
-        # High-level behavioral hints (kept intentionally coarse)
         if name == "default":
             lines.append("  predictors: frequency, history")
             lines.append("  ranking: score-based")
@@ -191,11 +258,15 @@ def describe_presets() -> str:
             lines.append("  predictors: frequency, history")
             lines.append("  ranking: score + recency decay")
             lines.append("  learning: enabled (time-aware)")
+        elif name == "robust":
+            lines.append("  predictors: frequency, history, edit-distance")
+            lines.append("  ranking: score + recency decay")
+            lines.append("  learning: enabled (robust)")
         elif name == "stateless":
             lines.append("  predictors: frequency")
             lines.append("  ranking: score-based")
             lines.append("  learning: disabled")
 
-        lines.append("")  # spacer
+        lines.append("")
 
     return "\n".join(lines).rstrip()

@@ -51,8 +51,10 @@ class DecayRanker(Ranker, LearnsFromHistory):
     """
     Ranker that boosts suggestions using recency-weighted history.
 
+    Properties:
     - Deterministic
     - Bounded
+    - Composable
     - Fully explainable
     """
 
@@ -80,11 +82,10 @@ class DecayRanker(Ranker, LearnsFromHistory):
             if entry.prefix != prefix:
                 continue
 
-            w = self._decay.weight(
+            counts[entry.value] += self._decay.weight(
                 now=now,
                 event_time=entry.timestamp,
             )
-            counts[entry.value] += w
 
         return dict(counts)
 
@@ -104,6 +105,7 @@ class DecayRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             boost = decayed.get(s.suggestion.value, 0.0) * self._weight
+
             ranked.append(
                 ScoredSuggestion(
                     suggestion=s.suggestion,
@@ -127,12 +129,13 @@ class DecayRanker(Ranker, LearnsFromHistory):
 
         for s in suggestions:
             boost = decayed.get(s.suggestion.value, 0.0) * self._weight
+
             explanations.append(
                 RankingExplanation(
                     value=s.suggestion.value,
-                    base_score=s.score,
+                    base_score=0.0,   # this ranker adds, does not define base
                     history_boost=boost,
-                    final_score=s.score + boost,
+                    final_score=boost,
                     source="decay",
                 )
             )
