@@ -4,7 +4,8 @@
   },
   "he": {
     "hello": 10,
-    "help": 4
+    "help": 4,
+    "hero": 2
   },
   "py": {
     "pytest": 2
