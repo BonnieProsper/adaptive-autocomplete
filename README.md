@@ -309,3 +309,33 @@ git_push
 $ aac explain "gi" --preset command-palette
 git_commit    base=12.0 history=+3.0 =15.0 [source=learning]
 git_status    base=10.0 history=+0.0 =10.0 [source=score]
+
+
+## Performance Characteristics
+
+Benchmarks were run on 60,000 autocomplete calls.
+
+| Preset     | Avg Latency | Intended Use |
+|-----------|------------|--------------|
+| stateless | ~38 µs     | High-throughput, no learning |
+| default   | ~30 µs     | Balanced general autocomplete |
+| recency   | ~34 µs     | Time-adaptive suggestions |
+| robust    | ~145 µs    | Typo-tolerant input |
+
+### Notes
+- Robust mode trades latency for resilience to user error
+- All presets remain well under 1ms per suggestion
+- Benchmarks include warm-up and real empty-result cases
+
+### Why is `robust` slower?
+
+Robust mode uses edit-distance matching to recover from typos
+(e.g. `helo → hello`). This introduces an intentional O(n × m)
+cost per candidate.
+
+This tradeoff is explicit:
+- CLI tools benefit from robustness
+- Interactive UIs can debounce
+- High-throughput systems can disable robust mode
+
+The engine exposes this choice via presets.
