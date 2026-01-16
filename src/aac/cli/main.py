@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 
 from aac.cli import debug, explain, record, suggest
-from aac.presets import available_presets, create_engine, describe_presets
+from aac.cli.app import build_engine
+from aac.presets import available_presets, describe_presets
 from aac.storage.json_store import JsonHistoryStore
 
 DEFAULT_HISTORY_PATH = Path(".aac_history.json")
@@ -64,8 +65,10 @@ def main() -> None:
     persisted_history = store.load()
 
     # Build engine from preset and attach history
-    engine = create_engine(args.preset)
-    engine.history.replace(persisted_history)
+    engine = build_engine(
+        preset=args.preset,
+        history=persisted_history,
+    )
 
     dispatch = {
         "suggest": lambda: suggest.run(
