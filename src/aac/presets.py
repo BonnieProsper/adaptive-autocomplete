@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from aac.domain.history import History
 from aac.domain.types import WeightedPredictor
 from aac.engine.engine import AutocompleteEngine
+from aac.predictors.edit_distance import EditDistancePredictor
 from aac.predictors.frequency import FrequencyPredictor
 from aac.predictors.history import HistoryPredictor
-from aac.predictors.edit_distance import EditDistancePredictor
 from aac.ranking.decay import DecayFunction, DecayRanker
 from aac.ranking.score import ScoreRanker
-
 
 # ---------------------------------------------------------------------
 # Preset definition

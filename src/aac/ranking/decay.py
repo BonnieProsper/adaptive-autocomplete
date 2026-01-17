@@ -11,7 +11,6 @@ from aac.ranking.base import Ranker
 from aac.ranking.contracts import LearnsFromHistory
 from aac.ranking.explanation import RankingExplanation
 
-
 # ---------------------------------------------------------------------
 # Decay function
 # ---------------------------------------------------------------------

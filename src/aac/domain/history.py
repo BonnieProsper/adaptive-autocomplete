@@ -223,7 +223,7 @@ class History:
             for prefix, values in snapshot.items()
         }
 
-    def replace(self, other: "History") -> None:
+    def replace(self, other: History) -> None:
         """
         Replace contents with another History instance.
         Intended for persistence hydration.

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from time import perf_counter
-from typing import Iterable
 
 from aac.presets import create_engine
-
 
 TEXTS = ["h", "he", "hel", "help", "hero", "hex"] * 10_000
 WARMUP_TEXTS = ["h", "he", "hel"] * 1_000

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aac.presets import get_preset
 from aac.domain.history import History
+from aac.presets import get_preset
 
 
 def test_history_learning_boosts_selected_value() -> None:
