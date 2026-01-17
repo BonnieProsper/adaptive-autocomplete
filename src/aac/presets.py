@@ -225,7 +225,7 @@ def get_preset(name: str) -> EnginePreset:
         raise ValueError(
             f"Unknown preset '{name}'. "
             f"Available presets: {', '.join(available_presets())}"
-        )
+        ) from None
 
 
 def create_engine(preset: str) -> AutocompleteEngine:
