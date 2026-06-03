@@ -53,12 +53,12 @@ Rankers modify the ordering of suggestions after the weighted score aggregation 
 3. If your ranker binds to `History` at construction time:
    - Register it in `WeightOptimiser._rebuild_rankers_for_history()` in `src/aac/evaluation/optimiser.py` so weight optimisation can build fresh instances per evaluation
    - Register it in `EngineConfig.build()` in `src/aac/engine/config.py` so JSON-serialised engines can reconstruct it
-4. Add a contract test to `tests/contracts/` if you add a `RankerContractTestMixin` (currently missing - good first contribution)
+4. Write contract tests in `tests/contracts/test_ranker_contracts.py` subclassing `RankerContractTestMixin` from `tests/contracts/ranker_contract.py` - model yours on the existing `TestLearningRankerWithHistoryContract` class, which exercises both the no-history and with-history paths
 5. Write unit tests in `tests/ranking/`
 
-Key invariant: `explain()` must return suggestions in the same order as `rank()`. The engine enforces this at runtime via `test_explain_ordering_agreement.py`. Your ranker must not reorder between `rank()` and `explain()`.
+`explain()` must return suggestions in the same order as `rank()`. The engine enforces this at runtime via `test_explain_ordering_agreement.py`. Your ranker must not reorder between `rank()` and `explain()`.
 
-Key warning: if your ranker reads from `History`, implement `LearnsFromHistory` from `aac.ranking.contracts` by exposing a `history` attribute. The engine uses this to validate that all rankers and the engine share the same `History` instance at construction time.
+If your ranker reads from `History`, implement `LearnsFromHistory` from `aac.ranking.contracts` by exposing a `history` attribute. The engine validates at construction time that all rankers share the same `History` instance.
 
 ## Test standards
 

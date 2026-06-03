@@ -122,5 +122,6 @@ via `PredictorRegistry.register()`. The remaining limitation is that `to_config(
 derives the ranker's config name from `__class__.__name__` for unknown subclasses,
 so a custom `FancyRanker` round-trips as `"fancy"` - which then raises `ValueError`
 on `build()` unless the subclass is explicitly handled in `config.build()`. The
-fix would be a ranker registry mirroring `PredictorRegistry`, but the current
-behaviour is at least loudly wrong rather than silently wrong.
+`ValueError` message now mentions this explicitly. The fix would be a ranker registry
+mirroring `PredictorRegistry`, but the current behaviour is at least loudly wrong
+rather than silently wrong.

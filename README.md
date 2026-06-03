@@ -9,7 +9,7 @@
 An autocomplete engine that learns from user selections, recovers typos, and can explain every ranking decision as plain numbers.
 
 ```python
-from aac.presets import create_engine
+from aac import create_engine
 
 engine = create_engine("production")
 
@@ -38,6 +38,7 @@ make demo          # interactive browser demo (first run takes ~5s while SymSpel
 make test-fast     # fast unit tests (skips integration, property-based, and perf)
 make test          # full suite including integration and property-based tests
 make benchmark     # latency numbers
+make record-demo   # record docs/demo.gif (requires VHS: https://github.com/charmbracelet/vhs)
 ```
 
 Or with Docker (no Python install required):
@@ -55,13 +56,38 @@ make demo-docker   # opens at http://localhost:5000
 | `recency` | frequency, history | score + decay | recency matters |
 | `production` | frequency, history, symspell, trigram | score + decay | typos + recency |
 | `robust` | frequency, history, symspell | score + decay | typo recovery only |
+| `bktree` | frequency, history, edit-distance | score + decay | benchmarking only* |
+
+*BK-tree degrades to O(n) at 48k+ words (~60ms/query vs ~0.4ms for SymSpell). Excluded from `available_presets()` but accessible via `create_engine("bktree")`.
 
 ```python
-from aac.presets import create_engine, compare_presets
+from aac import create_engine
+from aac.presets import compare_presets
 
 engine = create_engine("production")
 comparison = compare_presets("programing", presets=["default", "production"])
 ```
+
+## HTTP API
+
+`aac serve` starts a minimal JSON API server with zero extra dependencies:
+
+```bash
+aac serve                          # http://127.0.0.1:8420
+aac serve --port 9000
+aac serve --host 0.0.0.0 --port 8420   # Docker
+```
+
+```
+GET  /suggest?q=prog[&limit=10]        → {"suggestions": ["program", ...]}
+GET  /explain?q=prog[&limit=10]        → {"explanations": [{...}, ...]}
+POST /record?q=prog&value=programming  → {"recorded": true}
+GET  /health                           → {"status": "ok", "preset": "production"}
+```
+
+The server is single-threaded (stdlib `http.server`). For concurrent workloads,
+run multiple processes behind a reverse proxy, or use the async API
+(`engine.suggest_async()`) directly.
 
 ## How it works
 
@@ -134,8 +160,7 @@ Two strategies: **grid search** (exhaustive, optimal on the grid) and **coordina
 
 ```python
 from pathlib import Path
-from aac.presets import create_engine
-from aac.storage.json_store import JsonHistoryStore
+from aac import create_engine, JsonHistoryStore
 
 store = JsonHistoryStore(Path.home() / ".aac_history.json")
 engine = create_engine("production", history=store.load(), thread_safe=True)
@@ -145,11 +170,12 @@ engine = create_engine("production", history=store.load(), thread_safe=True)
 
 ## Tests
 
-727 tests: invariant correctness, IR metrics, evaluation harness, concurrency, async API, CLI integration, and property-based fuzzing with Hypothesis.
+837 tests: invariant correctness, IR metrics, evaluation harness, concurrency, async API, CLI integration, ranker and predictor contracts, HTTP API, and property-based fuzzing with Hypothesis.
 
 - **SymSpell brute-force equivalence** - every result verified against a linear scan across multiple queries and distance thresholds.
 - **Explain single-pass** - `ranker.rank()` called exactly once per `explain()` call, verified with a spy.
 - **Ranker invariant** - `RuntimeError` if a ranker adds or removes candidates.
+- **Ranker thread-safety** - `LearningRanker` and `DecayRanker` use thread-local caches; concurrent `rank()` calls on a shared engine don't corrupt each other's prefix state.
 - **History isolation** - `compare_presets()` does not modify the caller's `History`.
 - **Property-based (Hypothesis)** - four core invariants across thousands of generated inputs; found two floating-point precision bugs that example-based tests missed.
 
@@ -166,7 +192,7 @@ src/aac/
 ├── storage/        - JsonHistoryStore (atomic write, v1→v2 migration)
 ├── evaluation/     - EvaluationHarness, WeightOptimiser, IR metrics (MRR, NDCG, AP)
 ├── benchmarks/     - latency benchmarks with baseline comparison
-├── cli/            - aac suggest / explain / record / history / demo
+├── cli/            - aac suggest / explain / record / history / serve / demo
 └── presets.py      - named engine configurations
 ```
 
