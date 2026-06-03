@@ -16,6 +16,7 @@ All notable changes to this project are documented here.
   using VHS. `make record-demo` runs the recorder.
 - `Changelog` and `Bug Tracker` project URLs in `pyproject.toml` (appear as sidebar
   links on PyPI).
+- `License :: OSI Approved :: MIT License` classifier in `pyproject.toml`.
 
 ### Fixed
 - `explain()` and `explain_as_dicts()` lacked a `limit` parameter, inconsistent with
