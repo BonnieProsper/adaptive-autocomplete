@@ -1,6 +1,6 @@
-.PHONY: install dev-setup demo demo-docker warm test test-fast test-perf benchmark benchmark-save benchmark-diff lint typecheck typecheck-examples pre-commit version-check check all run release release-zip
+.PHONY: install dev-setup demo demo-docker warm test test-fast test-perf benchmark benchmark-save benchmark-diff lint typecheck typecheck-examples pre-commit version-check check all run release release-zip record-demo
 
-# ── Setup ────────────────────────────────────────────────────────────────────
+# Setup
 
 install:
 	pip install poetry --quiet
@@ -13,7 +13,7 @@ install:
 	@echo "Or prefix any command with 'poetry run', e.g.:"
 	@echo "  poetry run aac suggest he"
 
-# ── Developer setup ──────────────────────────────────────────────────────────
+# Developer setup
 
 # Install dependencies + pre-commit hooks. Run once after cloning.
 dev-setup: install
@@ -24,14 +24,14 @@ dev-setup: install
 pre-commit:
 	poetry run pre-commit run --all-files
 
-# ── Run (convenience wrapper so 'aac' works without activating the venv) ────
+# Run (convenience wrapper so 'aac' works without activating the venv)
 
 ARGS ?= --help
 
 run:
 	poetry run aac $(ARGS)
 
-# ── Demo ─────────────────────────────────────────────────────────────────────
+# Demo
 
 # Run the interactive browser demo (requires Python + installed deps).
 demo: install
@@ -42,7 +42,7 @@ demo: install
 demo-docker:
 	docker compose up --build
 
-# ── Tests ────────────────────────────────────────────────────────────────────
+# Tests
 
 test:
 	poetry run pytest
@@ -87,7 +87,7 @@ benchmark-save:
 benchmark-diff:
 	poetry run python -m aac.benchmarks.benchmark_engine --diff
 
-# ── Code quality ─────────────────────────────────────────────────────────────
+# Code quality
 
 lint:
 	poetry run ruff check src tests examples scripts
@@ -108,14 +108,17 @@ version-check:
 
 check: lint typecheck test
 
-# ── Default ──────────────────────────────────────────────────────────────────
+# Default
 
 all: install check
 
-# ── Release ───────────────────────────────────────────────────────────────────
+# Release
 
 # Build a clean archive via git archive (respects .gitignore). See also: make release-zip
-VERSION := $(shell python -c "import tomllib; d=tomllib.load(open('pyproject.toml','rb')); print(d['tool']['poetry']['version'])")
+VERSION := $(shell python -c "import tomllib; d=tomllib.load(open('pyproject.toml','rb')); print(d['project']['version'])")
+
+record-demo:
+	@bash scripts/record_demo.sh
 
 release:
 	@echo "Building release archive for version $(VERSION)..."
