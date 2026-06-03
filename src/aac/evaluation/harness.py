@@ -207,13 +207,7 @@ class EvaluationHarness:
 def _breakdown_by_length(
     query_results: list[QueryResult],
 ) -> dict[int, dict[str, float]]:
-    """
-    Break down MRR by prefix length.
-
-    Returns {prefix_length: {metric: value}} for prefix lengths 1-6+.
-    Useful for understanding whether short prefixes (hard, many candidates)
-    or long prefixes (easy, few candidates) are dragging down the aggregate.
-    """
+    """Break down metrics by prefix length. Returns {length: {metric: value}} for lengths 1-6+."""
     buckets: dict[int, list[QueryResult]] = defaultdict(list)
 
     for qr in query_results:

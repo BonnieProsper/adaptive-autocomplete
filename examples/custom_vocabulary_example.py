@@ -1,20 +1,6 @@
 """
-custom_vocabulary_example.py - domain-specific vocabulary
+Domain-specific vocabulary example.
 
-Demonstrates bringing a custom vocabulary rather than the bundled 48k
-English corpus. Useful when:
-  - Your application has a domain-specific lexicon (medical, legal, code)
-  - You want completions for usernames, product names, or any non-English corpus
-  - You want to restrict suggestions to a controlled set of valid terms
-
-The key points this example demonstrates:
-  1. Custom vocab is a dict[str, int] (word → frequency count)
-  2. Relative frequencies matter, not absolute values
-  3. EngineConfig.to_json() captures the engine structure; the vocab is
-     supplied separately at build() time (it's too large to embed in JSON)
-  4. Typo recovery works on custom vocabularies exactly as on the bundled one
-
-Run:
     python examples/custom_vocabulary_example.py
 """
 from __future__ import annotations

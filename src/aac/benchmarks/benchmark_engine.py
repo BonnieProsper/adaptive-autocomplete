@@ -120,13 +120,7 @@ def _print_results(results: dict[str, dict[str, float]]) -> None:
 
 
 def _check_regressions(results: dict[str, dict[str, float]]) -> list[str]:
-    """
-    Return a list of regression messages for any preset exceeding its p99 threshold.
-
-    Thresholds are keyed by the first word of the label (the preset name).
-    Only suggest() calls are checked - explain() is expected to be slower
-    and is not gated by CI.
-    """
+    """Return regression messages for presets exceeding their p99 threshold."""
     failures: list[str] = []
     for label, s in results.items():
         if "[suggest]" not in label:

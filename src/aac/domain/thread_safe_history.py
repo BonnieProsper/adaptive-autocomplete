@@ -1,20 +1,4 @@
-"""
-Thread-safe wrapper around History for concurrent server environments.
-
-Usage::
-
-    from aac.domain.thread_safe_history import ThreadSafeHistory
-    from aac.storage.json_store import JsonHistoryStore
-    from aac.presets import create_engine
-
-    store = JsonHistoryStore(path)
-    history = ThreadSafeHistory(store.load())
-    engine = create_engine("production", history=history)
-
-    # Safe to call from multiple threads simultaneously:
-    engine.record_selection("prog", "programming")
-    store.save(history.snapshot_history())
-"""
+"""Thread-safe History wrapper for concurrent server environments."""
 from __future__ import annotations
 
 import threading

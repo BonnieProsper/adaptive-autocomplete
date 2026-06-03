@@ -33,13 +33,7 @@ class JsonHistoryStore(HistoryStore):
         self._path = path
 
     def load(self) -> History:
-        """
-        Load history from disk.
-
-        Returns an empty History if the file does not exist.
-        Malformed entries are skipped; a partially corrupt file
-        returns whatever entries were valid.
-        """
+        """Load history from disk. Returns empty History if file missing; skips malformed entries."""
         if not self._path.exists():
             return History()
 
@@ -64,25 +58,7 @@ class JsonHistoryStore(HistoryStore):
         return _load_data(data)
 
     def save(self, history: History) -> None:
-        """
-        Atomically persist all history entries to disk.
-
-        Writes to a temp file in the same directory (same filesystem,
-        so rename never crosses a device boundary), then renames it over
-        the target.
-
-        On POSIX, ``rename()`` is atomic - a reader sees either the old
-        file or the new one, never a partial write.
-
-        On Windows, ``Path.replace()`` is a delete-then-rename and is not
-        atomic.  To mitigate crash risk, the previous file is first moved
-        to ``<path>.bak``, then the temp file is renamed into place.  If a
-        crash occurs between those two steps the ``.bak`` file contains the
-        previous history.  The loader handles a missing target file by
-        returning an empty ``History``.
-
-        Creates parent directories if they do not exist.
-        """
+        """Write history to disk via atomic temp-file rename (POSIX) or .bak rotation (Windows)."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
 
         entries = [

@@ -60,13 +60,7 @@ class OptimisationResult:
 
 
 class WeightOptimiser:
-    """
-    Automated predictor weight tuning.
-
-    Predictor indexes are built once at construction; only weights change
-    between evaluations, so tuning the production preset costs ~2ms/eval
-    rather than 10s.
-    """
+    """Automated predictor weight tuning. Indexes are built once; weight changes cost ~2ms/eval."""
 
     def __init__(
         self,
@@ -274,12 +268,7 @@ class WeightOptimiser:
         *,
         max_rounds: int = 5,
     ) -> OptimisationResult:
-        """
-        Coordinate descent over predictor weights.
-
-        Tunes one predictor at a time, cycling until convergence or max_rounds.
-            ``best_weights`` always contains the full weight dict.
-        """
+        """Tune one weight at a time until convergence. May find a local optimum."""
         baseline_weights = self._get_baseline_weights(base_preset)
         baseline_engine = self._build_engine_with_weights(base_preset, baseline_weights)
         baseline_score = self._evaluate(baseline_engine)

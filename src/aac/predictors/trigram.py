@@ -31,16 +31,7 @@ _MIN_PREFIX_LENGTH = 4
 
 
 def _trigrams(s: str) -> frozenset[str]:
-    """
-    Return the trigram set of a padded string.
-
-    Padding with two leading spaces and one trailing space gives
-    boundary trigrams that encode word-start and word-end position,
-    so 'he' and 'she' share ' he' but not '  h'.
-
-    Example:
-        _trigrams('helo') == frozenset({'  h', ' he', 'hel', 'elo', 'lo '})
-    """
+    """Character trigrams of a padded string. Padding encodes word boundaries."""
     padded = f"  {s} "
     return frozenset(padded[i : i + 3] for i in range(len(padded) - 2))
 

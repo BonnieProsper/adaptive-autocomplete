@@ -1,10 +1,4 @@
-"""
-ContextualHistory: domain-partitioned learning for multi-context autocomplete.
-
-Each domain (e.g. "shell", "search", "python") gets its own History instance.
-Pass ctx.for_domain("shell") to create_engine() to build a domain-specific engine.
-Domains are created lazily; no upfront registration needed.
-"""
+"""Per-domain History partitioning for multi-context autocomplete."""
 from __future__ import annotations
 
 from collections.abc import Iterator

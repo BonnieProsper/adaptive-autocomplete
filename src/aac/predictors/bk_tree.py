@@ -80,19 +80,7 @@ class BKTree:
         *,
         max_distance: int,
     ) -> Iterator[tuple[str, int]]:
-        """
-        Yield (word, distance) pairs within max_distance of query.
-
-        Results are yielded in tree traversal order, not sorted by
-        distance. Callers that need sorted results should sort the output.
-
-        Args:
-            query: The string to search for.
-            max_distance: Maximum Levenshtein distance to include.
-
-        Yields:
-            Tuples of (word, distance) for each match.
-        """
+        """Yield (word, distance) pairs within max_distance. Results are in traversal order."""
         if self._root is None:
             return
 
@@ -123,14 +111,7 @@ class BKTree:
 # ------------------------------------------------------------------
 
 def levenshtein(a: str, b: str) -> int:
-    """
-    Compute Levenshtein edit distance using a space-optimised DP.
-
-    Swaps arguments so the shorter string drives the outer loop,
-    keeping memory at O(min(|a|, |b|)) rather than O(|a| x |b|).
-
-    Cost model: insertion=1, deletion=1, substitution=1.
-    """
+    """Levenshtein distance. O(min(|a|,|b|)) space."""
     # Identical strings - O(1) check saves full DP on exact cache hits
     # and on BK-tree duplicate detection during index construction.
     if a == b:

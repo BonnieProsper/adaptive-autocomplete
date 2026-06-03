@@ -1,19 +1,4 @@
-"""
-Query log structures and dataset generators.
-
-A QueryLog is a list of (query_text, relevant_completions) pairs that
-represent ground-truth relevance for evaluation. Three sources:
-
-1. From a History object  - uses recorded selections as ground truth.
-   The most realistic source: it reflects actual user behaviour.
-
-2. Synthetic              - generates query prefixes from a vocabulary
-   with known relevant completions (prefix-match + typo variants).
-   Useful for unit testing the evaluation harness itself.
-
-3. From a JSONL file      - loads a human-labelled query log for
-   production-quality evaluation. Format described in load_jsonl().
-"""
+"""Query log structures and generators for offline evaluation."""
 from __future__ import annotations
 
 import json
@@ -54,40 +39,7 @@ def make_query_log_from_history(
     max_entries: int | None = None,
     seed: int = 42,
 ) -> QueryLog:
-    """
-    Build a QueryLog from a History object, using recorded selections as ground truth.
-
-    Produces one QueryLogEntry per prefix. relevant = values selected >= min_count times.
-    Grade for each completion = selection_count / max_selection_count
-    for that prefix (so the most-selected word gets grade 1.0).
-
-    Parameters:
-        history:      History instance to build the log from.
-        min_count:    Minimum selection count for a value to be
-                      considered relevant. Default: 1.
-        max_entries:  Cap on the number of entries. If the history has
-                      more prefixes than this, a deterministic subsample
-                      is taken using ``seed``.
-        seed:         Random seed for reproducible subsampling.
-                      Only used when ``max_entries`` is set. Default: 42.
-
-    Returns:
-        QueryLog with one entry per prefix that has at least one
-        relevant completion.
-
-    Example::
-
-        from aac.presets import create_engine
-        from aac.evaluation import make_query_log_from_history, EvaluationHarness
-
-        engine = create_engine("production")
-        # ... record_selection() calls or load from JsonHistoryStore ...
-
-        log = make_query_log_from_history(engine.history, min_count=2)
-        harness = EvaluationHarness(log)
-        result = harness.run(engine)
-        print(result.summary())
-    """
+    """Build a QueryLog from recorded selections. relevant = values selected >= min_count times."""
     counts = history.snapshot_counts()
 
     entries: list[QueryLogEntry] = []
@@ -129,28 +81,7 @@ def make_synthetic_query_log(
     include_typos: bool = True,
     seed: int = 42,
 ) -> QueryLog:
-    """
-    Generate a synthetic QueryLog from a vocabulary.
-
-    For each (word, prefix_length) combination, the relevant completion
-    is the word itself (exact prefix match). If ``include_typos`` is True,
-    adds typo variants of some prefixes where the relevant set contains
-    the correctly-spelled word.
-
-    Useful for:
-    - Unit testing the EvaluationHarness without needing real user data
-    - Benchmarking different presets on a controlled vocabulary
-    - Establishing a baseline before collecting real query logs
-
-    Parameters:
-        vocabulary:      List of vocabulary words.
-        prefix_lengths:  Prefix lengths to generate. Default: [2, 3, 4].
-        include_typos:   Whether to add typo-prefix entries. Default: True.
-        seed:            Random seed for reproducibility.
-
-    Returns:
-        QueryLog with entries for prefix-match and (optionally) typo cases.
-    """
+    """Generate a synthetic QueryLog from a vocabulary for testing. No real user data needed."""
     rng = random.Random(seed)
     if prefix_lengths is None:
         prefix_lengths = [2, 3, 4]
@@ -190,23 +121,8 @@ def make_synthetic_query_log(
 
 def load_jsonl(path: Path) -> QueryLog:
     """
-    Load a query log from a JSONL file (one JSON object per line).
-
-    Expected format per line::
-
-        {"prefix": "prog", "relevant": ["programming", "program"], "grades": {"programming": 1.0, "program": 0.8}}
-
-    The ``grades`` field is optional. If absent, binary relevance is assumed.
-
-    Parameters:
-        path: Path to the JSONL file.
-
-    Returns:
-        QueryLog.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        ValueError: If any line has invalid format.
+    Load a JSONL query log. Each line: {"prefix": str, "relevant": [str], "grades": {str: float}}.
+    grades is optional.
     """
     entries = []
     with open(path, encoding="utf-8") as f:
@@ -216,12 +132,14 @@ def load_jsonl(path: Path) -> QueryLog:
                 continue
             try:
                 obj = json.loads(line)
+                if not isinstance(obj, dict):
+                    raise ValueError(f"expected a JSON object, got {type(obj).__name__}")
                 entries.append(QueryLogEntry(
                     prefix=obj["prefix"],
                     relevant=set(obj["relevant"]),
                     grades=obj.get("grades", {}),
                 ))
-            except (KeyError, json.JSONDecodeError) as e:
+            except (KeyError, json.JSONDecodeError, ValueError) as e:
                 raise ValueError(
                     f"Invalid query log entry at line {i} in {path}: {e}\n"
                     f"Expected: {{\"prefix\": \"...\", \"relevant\": [...], \"grades\": {{...}}}}"

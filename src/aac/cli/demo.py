@@ -1,18 +1,4 @@
-"""
-DEMO COMMAND
-
-Starts a minimal local HTTP server and opens an interactive browser demo
-showing suggest(), explain(), and compare_presets() live.
-
-No external dependencies - uses only the stdlib HTTP server and the
-installed adaptive-autocomplete package.
-
-Usage:
-    aac demo
-    aac demo --port 8765
-    aac demo --preset default
-    aac demo --vocab-path commands.txt
-"""
+"""Local HTTP server for the interactive browser demo. No extra dependencies."""
 from __future__ import annotations
 
 import json

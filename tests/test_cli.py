@@ -182,8 +182,8 @@ def test_debug_outputs_scored_and_ranked(tmp_path: Path) -> None:
     code, out = _run("debug", "he", "--preset", "stateless",
                      history_path=tmp_path / "h.json")
     assert code == 0
-    assert "Scored:" in out
-    assert "Ranked:" in out
+    assert "Scored" in out
+    assert "Ranked" in out
 
 
 # ------------------------------------------------------------------

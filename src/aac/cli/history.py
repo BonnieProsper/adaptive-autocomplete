@@ -1,9 +1,4 @@
-"""
-CLI subcommand: aac history [prefix]
-
-Shows what the engine has learned - selection counts and recency
-per prefix, sorted by count descending.
-"""
+"""CLI: aac history [prefix] - shows recorded selection counts."""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -13,15 +8,7 @@ from aac.domain.history import History, HistoryEntry
 
 
 def run(*, history: History, prefix: str | None, limit: int) -> None:
-    """
-    Print a summary of recorded selections.
-
-    With no prefix: shows the top-level prefix summary (total selections
-    per prefix, most-selected value for each).
-
-    With a prefix: shows per-value selection counts for that prefix,
-    sorted by count descending, with recency information.
-    """
+    """Print recorded selection counts, optionally filtered to a single prefix."""
     entries = list(history.entries())
 
     if not entries:

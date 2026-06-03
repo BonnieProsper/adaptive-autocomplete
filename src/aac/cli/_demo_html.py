@@ -1,15 +1,4 @@
-"""
-Static HTML for the adaptive-autocomplete demo server.
-
-This module exists purely to keep demo.py readable: the HTML, CSS, and
-JavaScript for the demo UI are substantial (~625 lines) and embedding them
-as a string literal inside the server file made the Python logic hard to
-navigate.  Splitting them here is the smallest-footprint fix - no build
-step, no template engine, no static-file serving change needed.
-
-The server injects the active preset name at request time:
-    _DEMO_HTML.replace('window._PRESET || "production"', f'"{preset}"')
-"""
+"""Static HTML/CSS/JS for the aac demo server."""
 _DEMO_HTML = """\
 <!DOCTYPE html>
 <html lang="en">
