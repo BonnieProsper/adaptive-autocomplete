@@ -242,7 +242,7 @@ class AutocompleteEngine:
     # Explanation
     # ------------------------------------------------------------------
 
-    def explain(self, text: str) -> list[RankingExplanation]:
+    def explain(self, text: str, *, limit: int | None = None) -> list[RankingExplanation]:
         """Return per-suggestion RankingExplanation objects in final ranked order."""
         ctx = CompletionContext(text)
 
@@ -340,12 +340,12 @@ class AutocompleteEngine:
                 )
             )
 
-        return explanations
+        return explanations[:limit] if limit is not None else explanations
 
-    def explain_as_dicts(self, text: str) -> list[dict[str, object]]:
+    def explain_as_dicts(self, text: str, *, limit: int | None = None) -> list[dict[str, object]]:
         """explain() as plain dicts - for CLI and JSON serialisation."""
         results: list[dict[str, object]] = []
-        for e in self.explain(text):
+        for e in self.explain(text, limit=limit):
             all_sources = list(e.base_components.keys()) + [
                 k for k in e.history_components if k not in e.base_components
             ]
@@ -505,10 +505,7 @@ class AutocompleteEngine:
     # ------------------------------------------------------------------
 
     def debug(self, text: str) -> DebugState:
-        """
-        Developer-only debug surface. NOT a stable API.
-        Returned objects MUST NOT be mutated.
-        """
+        """Developer-only debug surface. Unstable; do not mutate returned objects."""
         ctx = CompletionContext(text)
         scored = self._score(ctx)
         ranked = self._apply_ranking(ctx, scored)
@@ -535,11 +532,7 @@ class AutocompleteEngine:
         limit: int | None = None,
     ) -> dict[str, list[RankingExplanation]]:
         """explain() for multiple prefixes. Returns {prefix: explanations}."""
-        result = {}
-        for text in texts:
-            exps = self.explain(text)
-            result[text] = exps[:limit] if limit is not None else exps
-        return result
+        return {text: self.explain(text, limit=limit) for text in texts}
 
     async def batch_suggest_async(
         self,
@@ -566,10 +559,15 @@ class AutocompleteEngine:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, lambda: self.suggest(text, limit=limit))
 
-    async def explain_async(self, text: str) -> list[RankingExplanation]:
+    async def explain_async(
+        self,
+        text: str,
+        *,
+        limit: int | None = None,
+    ) -> list[RankingExplanation]:
         """Async wrapper around explain(). See suggest_async() for rationale."""
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, lambda: self.explain(text))
+        return await loop.run_in_executor(None, lambda: self.explain(text, limit=limit))
 
     async def record_selection_async(self, text: str, value: str) -> None:
         """Async wrapper around record_selection(). See suggest_async() for rationale."""

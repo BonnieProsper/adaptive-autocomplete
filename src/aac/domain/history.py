@@ -112,13 +112,11 @@ class History:
         return dict(counts)
 
     def count(self, value: str) -> int:
-        """
-        Total selections for a value across all prefixes. O(n) full scan.
+        """Total selections for a value across all prefixes. O(n) scan - avoid in hot paths.
 
-        If you know the prefix (you usually do), prefer:
-            counts_for_prefix(prefix).get(value, 0)
-
-        Not used internally - intended for diagnostics and tests.
+        Prefer counts_for_prefix(prefix)[value] when the prefix is known; it is O(k)
+        via the prefix index and is the right call in any ranking or suggestion path.
+        This method is intended for tests and one-off inspection only.
         """
         value = str(value)
         return sum(
@@ -145,12 +143,7 @@ class History:
         return self.snapshot_counts()
 
     def snapshot_counts(self) -> dict[str, dict[str, int]]:
-        """
-        Count-only view of history: {prefix: {value: count}}.
-
-        Do not use for persistence - timestamps are omitted, which breaks
-        DecayRanker on reload. Use JsonHistoryStore.save() instead.
-        """
+        """Count-only view: {prefix: {value: count}}. Omits timestamps - use JsonHistoryStore for persistence."""
         snapshot: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
         for e in self._entries:

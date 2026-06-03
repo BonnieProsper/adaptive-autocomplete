@@ -49,12 +49,7 @@ class PredictorRegistry:
         params: dict[str, Any],
         history: History | None = None,
     ) -> Predictor:
-        """
-        Build a predictor instance by name.
-
-        Raises:
-            KeyError: If the name is not registered.
-        """
+        """Build a predictor by registered name. Raises KeyError if unknown."""
         if name not in cls._registry:
             registered = sorted(cls._registry.keys())
             raise KeyError(
@@ -244,7 +239,7 @@ class EngineConfig:
 
     def build(
         self,
-        vocabulary: dict[str, int] | None = None,
+        vocabulary: Mapping[str, int] | None = None,
         history: History | None = None,
     ) -> AutocompleteEngine:
         """
@@ -319,7 +314,8 @@ class EngineConfig:
             else:
                 raise ValueError(
                     f"Unknown ranker {rc.name!r}. "
-                    f"Known rankers: score, decay, learning."
+                    f"Known rankers: score, decay, learning. "
+                    f"Custom ranker round-trip is not yet supported; see DESIGN.md."
                 )
 
         return AutocompleteEngine(

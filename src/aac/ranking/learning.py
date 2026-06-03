@@ -1,6 +1,7 @@
 """LearningRanker: boosts suggestions with high selection history above their base frequency score."""
 from __future__ import annotations
 
+import threading
 from collections.abc import Sequence
 
 from aac.domain.history import History
@@ -22,7 +23,8 @@ class LearningRanker(Ranker, LearnsFromHistory):
     predictor and you want learning at the ranking layer instead.
 
     rank() and explain() share one counts_for_prefix() call per prefix.
-    Cache is invalidated at the start of each rank() call.
+    Cache is thread-local so concurrent rank() calls on a shared engine
+    (e.g. with ThreadSafeHistory) don't corrupt each other's state.
     """
 
     def __init__(
@@ -44,25 +46,25 @@ class LearningRanker(Ranker, LearnsFromHistory):
         self._boost = boost
         self._dominance_ratio = dominance_ratio
 
-        # Cache: most recent counts_for_prefix result.
-        self._cached_prefix: str | None = None
-        self._cached_counts: dict[str, int] = {}
-        self._cache_valid: bool = False
+        # Per-thread cache: each thread gets its own cached_prefix / cached_counts
+        # so concurrent rank() calls on the same engine don't corrupt each other.
+        self._local: threading.local = threading.local()
 
     # --- cache ---
 
     def _counts(self, prefix: str) -> dict[str, int]:
-        """Return counts for prefix, reusing cache when prefix is unchanged since last rank()."""
-        if prefix == self._cached_prefix and self._cache_valid:
-            return self._cached_counts
+        """Return counts for prefix, reusing per-thread cache when prefix is unchanged since last rank()."""
+        local = self._local
+        if (
+            getattr(local, "cache_valid", False)
+            and prefix == getattr(local, "cached_prefix", None)
+        ):
+            return local.cached_counts  # type: ignore[no-any-return]  # threading.local attrs are untyped
         counts = self.history.counts_for_prefix(prefix)
-        self._cached_prefix = prefix
-        self._cached_counts = counts
-        self._cache_valid = True
+        local.cached_prefix = prefix
+        local.cached_counts = counts
+        local.cache_valid = True
         return counts
-
-    def _invalidate_cache(self) -> None:
-        self._cache_valid = False
 
     # --- learning internals ---
 
@@ -130,7 +132,7 @@ class LearningRanker(Ranker, LearnsFromHistory):
 
         # Invalidate cache so this rank() always fetches fresh history,
         # then store the result so explain() can reuse it without a second fetch.
-        self._invalidate_cache()
+        self._local.cache_valid = False
         counts = self._counts(prefix)
 
         # Invariant: no history signal => preserve original order

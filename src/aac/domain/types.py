@@ -15,12 +15,14 @@ class CompletionContext:
         The completion prefix, normalised to lowercase.
 
         When cursor_pos is None, returns the last whitespace-delimited token.
-        When cursor_pos is set, excludes the character under the cursor
-        (treating it as still being typed):
+        When cursor_pos is set, the character at cursor_pos is treated as still
+        being typed and excluded from the prefix. The common case is cursor at
+        the end of the string (cursor_pos == len(text)):
 
-            text="git ch", cursor_pos=6  ->  "c"
-            text="git ch", cursor_pos=5  ->  ""
-            text="he",     cursor_pos=None -> "he"
+            text="git ch",  cursor_pos=None  ->  "ch"   (no cursor: full last token)
+            text="git ch",  cursor_pos=6     ->  "c"    (cursor at end: last char excluded)
+            text="git ch",  cursor_pos=5     ->  ""     (cursor mid-token: full token excluded)
+            text="he",      cursor_pos=None  ->  "he"
         """
         if self.cursor_pos is not None:
             before = self.text[: self.cursor_pos]

@@ -48,9 +48,9 @@ class RankingExplanation:
         return (
             f"RankingExplanation("
             f"value={self.value!r}, "
-            f"base={self.base_score:.4f}, "
-            f"boost={self.history_boost:+.4f}, "
-            f"final={self.final_score:.4f}"
+            f"base={self.base_score:.2f}, "
+            f"boost={self.history_boost:+.2f}, "
+            f"final={self.final_score:.2f}"
             f")"
         )
 
@@ -146,6 +146,6 @@ class RankingExplanation:
         return (
             f"{self.value}: "
             f"base={self.base_score:.2f}, "
-            f"history={self.history_boost:.2f}, "
+            f"boost={self.history_boost:.2f}, "
             f"final={self.final_score:.2f}"
         )

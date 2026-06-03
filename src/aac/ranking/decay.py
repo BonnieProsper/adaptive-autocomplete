@@ -1,6 +1,7 @@
 """DecayRanker: applies exponential time-decay to selection counts. Recent selections rank higher."""
 from __future__ import annotations
 
+import threading
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -53,7 +54,8 @@ class DecayRanker(Ranker, LearnsFromHistory):
     Recent selections rank higher; old ones fade out.
 
     rank() and explain() share one _decayed_counts() call per (prefix, now) pair.
-    Cache is invalidated at the start of each rank() call.
+    Cache is thread-local so concurrent rank() calls on a shared engine
+    (e.g. with ThreadSafeHistory) don't corrupt each other's state.
     """
 
     def __init__(
@@ -69,19 +71,22 @@ class DecayRanker(Ranker, LearnsFromHistory):
         self._weight = weight
         self._now = now
 
-        self._cached_prefix: str | None = None
-        self._cached_now: datetime | None = None
-        self._cached_counts: dict[str, float] = {}
-        self._cache_valid: bool = False
-        self._rank_now: datetime | None = None
+        # Per-thread cache so concurrent rank() calls on a shared engine
+        # (e.g. with ThreadSafeHistory) don't corrupt each other's state.
+        self._local: threading.local = threading.local()
 
     def _now_utc(self) -> datetime:
         return self._now if self._now is not None else utcnow()
 
     def _decayed_counts(self, prefix: str, now: datetime) -> dict[str, float]:
         """Recency-weighted selection counts. Cached per (prefix, now) from the last rank() call."""
-        if self._cache_valid and prefix == self._cached_prefix and now == self._cached_now:
-            return self._cached_counts
+        local = self._local
+        if (
+            getattr(local, "cache_valid", False)
+            and prefix == getattr(local, "cached_prefix", None)
+            and now == getattr(local, "cached_now", None)
+        ):
+            return local.cached_counts  # type: ignore[no-any-return]  # threading.local attrs are untyped
 
         counts: dict[str, float] = defaultdict(float)
         for entry in self.history.entries_for_prefix(prefix):
@@ -91,10 +96,10 @@ class DecayRanker(Ranker, LearnsFromHistory):
             )
 
         result = dict(counts)
-        self._cached_prefix = prefix
-        self._cached_now = now
-        self._cached_counts = result
-        self._cache_valid = True
+        local.cached_prefix = prefix
+        local.cached_now = now
+        local.cached_counts = result
+        local.cache_valid = True
         return result
 
     def ranker_config(self) -> dict[str, float]:
@@ -112,9 +117,9 @@ class DecayRanker(Ranker, LearnsFromHistory):
         if not suggestions:
             return []
 
-        self._cache_valid = False
+        self._local.cache_valid = False
         now = self._now_utc()
-        self._rank_now = now
+        self._local.rank_now = now
         decayed = self._decayed_counts(prefix, now)
         if not decayed:
             return list(suggestions)
@@ -152,7 +157,8 @@ class DecayRanker(Ranker, LearnsFromHistory):
         prefix: str,
         suggestions: Sequence[ScoredSuggestion],
     ) -> list[RankingExplanation]:
-        now = self._rank_now if self._rank_now is not None else self._now_utc()
+        rank_now = getattr(self._local, "rank_now", None)
+        now = rank_now if rank_now is not None else self._now_utc()
         decayed = self._decayed_counts(prefix, now)
 
         explanations: list[RankingExplanation] = []

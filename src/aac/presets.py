@@ -190,12 +190,7 @@ def _bktree_engine(
     history: History | None,
     vocabulary: Mapping[str, int] | None = None,
 ) -> AutocompleteEngine:
-    """
-    BK-tree approximate matching. Retained for benchmarking comparison.
-
-    Degrades to O(n) at max_distance=2 over 48k+ words (~60ms/call).
-    Use the 'robust' preset (SymSpell) for production typo recovery.
-    """
+    """BK-tree preset. ~60ms/call at 48k words. Kept for benchmarking; use 'robust' in production."""
     history = history if history is not None else History()
     frequencies = vocabulary or _get_default_vocabulary()
 
@@ -355,7 +350,12 @@ PRESETS: dict[str, EnginePreset] = {
 
 
 def available_presets() -> list[str]:
-    # bktree is excluded from the public listing - it degrades to O(n) at scale.
+    """
+    Return the names of all production-ready presets.
+
+    `bktree` is excluded: it degrades to O(n) at scale and is retained only
+    for benchmarking comparisons. It remains accessible via ``create_engine('bktree')``.
+    """
     return sorted(name for name in PRESETS if name != "bktree")
 
 
@@ -537,7 +537,7 @@ def compare_presets(
     # Collect explanations per preset.
     explanations_by_preset: dict[str, list[RankingExplanation]] = {}
     for name, engine in engines.items():
-        explanations_by_preset[name] = engine.explain(text)[:limit]
+        explanations_by_preset[name] = engine.explain(text, limit=limit)
 
     # Union of all suggestions that appeared in any preset, in order of
     # first appearance (preserves the ordering of the first preset listed).

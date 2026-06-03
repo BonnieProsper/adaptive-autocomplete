@@ -95,9 +95,9 @@ def test_repr_is_concise_and_contains_key_fields() -> None:
     exp = _make("hello", base=1.4063, boost=1.5)
     r = repr(exp)
     assert "hello" in r
-    assert "1.4063" in r
-    assert "+1.5000" in r
-    assert "2.9063" in r
+    assert "1.41" in r
+    assert "+1.50" in r
+    assert "2.91" in r
     # Must NOT contain the verbose internal fields
     assert "base_components" not in r
     assert "history_components" not in r
