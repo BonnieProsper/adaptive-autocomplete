@@ -35,7 +35,6 @@ def _init_version() -> str:
 
 def _changelog_version() -> str:
     text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    # Match the first "## [x.y.z]" heading - that's the most recent release.
     match = re.search(r"^##\s+\[([^\]]+)\]", text, re.MULTILINE)
     if not match:
         raise ValueError(
@@ -63,7 +62,7 @@ def main() -> int:
 
     print("Version mismatch!", file=sys.stderr)
     for source, version in sources.items():
-        marker = "  ✓" if version == max(versions) else "  ✗"
+        marker = "  OK" if version == max(versions) else "  !!"
         print(f"{marker}  {source:<28s}  {version}", file=sys.stderr)
     print(
         "\nUpdate all three to agree, then commit together.",
