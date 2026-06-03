@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from aac.cli import debug, demo, explain, history, record, suggest
+from aac.cli import debug, demo, explain, history, record, serve, suggest
 from aac.cli.app import build_engine
 from aac.engine.engine import AutocompleteEngine
 from aac.presets import PRESETS, available_presets, compare_presets, describe_presets
@@ -357,6 +357,44 @@ def main() -> None:
     debug_p.add_argument("text", help="Input prefix to debug")
     _add_shared_args(debug_p)
 
+    # ── serve ─────────────────────────────────────────────────────────
+    serve_p = subparsers.add_parser(
+        "serve",
+        help="Start a JSON API server (GET /suggest, GET /explain, POST /record)",
+        description=(
+            "Serve the engine as a minimal JSON API. Zero extra dependencies.\n\n"
+            "Endpoints:\n"
+            "  GET  /suggest?q=<prefix>[&limit=N]   -> {\"suggestions\": [...]}\n"
+            "  GET  /explain?q=<prefix>[&limit=N]   -> {\"explanations\": [...]}\n"
+            "  POST /record?q=<prefix>&value=<word> -> {\"recorded\": true}\n"
+            "  GET  /health                         -> {\"status\": \"ok\", ...}\n\n"
+            "Examples:\n"
+            "  aac serve\n"
+            "  aac serve --port 9000\n"
+            "  aac serve --host 0.0.0.0 --port 8420   # Docker\n"
+            "  curl 'http://localhost:8420/suggest?q=prog&limit=5'\n"
+            "  curl 'http://localhost:8420/explain?q=prog'\n"
+            "  curl -X POST 'http://localhost:8420/record?q=prog&value=programming'\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    serve_p.add_argument(
+        "--host", default="127.0.0.1",
+        help=(
+            "Interface to bind to (default: 127.0.0.1 - localhost only). "
+            "Use 0.0.0.0 when running inside Docker."
+        ),
+    )
+    serve_p.add_argument(
+        "--port", type=int, default=8420,
+        help="Port to listen on (default: 8420). Falls back to a random free port if occupied.",
+    )
+    serve_p.add_argument(
+        "--quiet", action="store_true", default=False,
+        help="Suppress startup banner (useful when running as a managed service).",
+    )
+    _add_shared_args(serve_p)
+
     # ── demo ──────────────────────────────────────────────────────────
     demo_p = subparsers.add_parser(
         "demo",
@@ -470,7 +508,7 @@ def _run(args: argparse.Namespace) -> None:
         _run_eval(args, engine, store)
         return
     elif args.command == "tune":
-        _run_tune(args, engine)
+        _run_tune(args, engine, persisted_history)
         return
 
     if args.command == "suggest":
@@ -484,6 +522,14 @@ def _run(args: argparse.Namespace) -> None:
         record.run(engine=engine, store=store, text=args.text, value=args.value)
     elif args.command == "debug":
         debug.run(engine=engine, text=args.text)
+    elif args.command == "serve":
+        serve.run(
+            engine=engine,
+            host=args.host,
+            port=args.port,
+            preset=args.preset,
+            quiet=args.quiet,
+        )
     elif args.command == "demo":
         demo.run(
             engine=engine,
@@ -644,16 +690,17 @@ def _run_eval(
             )
 
 
-def _run_tune(args: argparse.Namespace, engine: AutocompleteEngine) -> None:
+def _run_tune(args: argparse.Namespace, engine: AutocompleteEngine, persisted_history: object) -> None:
     from aac.evaluation import EvaluationHarness, WeightOptimiser
     from aac.evaluation.datasets import load_jsonl
 
     preset = getattr(args, "preset", "production")
 
     if getattr(args, "from_history", False):
-        history = engine.history
+        # engine.history may be empty for stateless presets that ignore history.
+        # Use persisted_history loaded from disk instead.
         try:
-            harness = EvaluationHarness.from_history(history, k=args.k)
+            harness = EvaluationHarness.from_history(persisted_history, k=args.k)
         except ValueError as e:
             print(f"aac tune: {e}", file=sys.stderr)
             sys.exit(1)
